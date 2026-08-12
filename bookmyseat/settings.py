@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "cloudinary",
+    "cloudinary_storage",
     "users",
     "movies",
 ]
@@ -57,6 +59,12 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
+}
 
 ROOT_URLCONF = "bookmyseat.urls"
 LOGIN_URL='/login/'
@@ -125,7 +133,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
