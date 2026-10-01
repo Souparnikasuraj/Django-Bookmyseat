@@ -4,10 +4,30 @@ from .forms import UserRegisterForm, UserUpdateForm
 from django.contrib.auth import login,authenticate
 from django.contrib.auth.decorators import login_required
 from movies.models import Movie, Booking
+from django.db.models import Count
 
 def home(request):
     movies = Movie.objects.all()
-    return render(request, 'home.html', {'movies': movies})
+
+    trending_movies = Movie.objects.annotate(
+        booking_count=Count('show_schedules__bookings')
+    ).filter(
+        booking_count__gt=0
+    ).order_by('-booking_count')[:5]
+
+    recent_movies = Movie.objects.order_by(
+        '-release_date'
+    )[:5]
+
+    return render(
+        request,
+        'home.html',
+        {
+            'movies': movies,
+            'trending_movies': trending_movies,
+            'recent_movies': recent_movies,
+        }
+    )
 
 def register(request):
     if request.method == 'POST':

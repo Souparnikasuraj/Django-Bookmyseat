@@ -1,0 +1,934 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+
+<style>
+
+/* =========================================================
+   PAYMENT PAGE
+========================================================= */
+
+.payment-page {
+    width: 100vw;
+    min-height: 100vh;
+
+    margin-left: calc(50% - 50vw);
+
+    background: #f6f7fb;
+
+    padding: 50px 5% 80px;
+
+    box-sizing: border-box;
+}
+
+
+.payment-container {
+    width: 100%;
+    max-width: 1050px;
+
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.payment-header {
+    text-align: center;
+
+    margin-bottom: 30px;
+}
+
+
+.payment-header h1 {
+    margin: 0;
+
+    font-size: 32px;
+    font-weight: 700;
+
+    color: #222;
+}
+
+
+.payment-header p {
+    margin-top: 8px;
+
+    color: #777;
+
+    font-size: 15px;
+}
+
+
+/* =========================================================
+   MAIN LAYOUT
+========================================================= */
+
+.payment-layout {
+    display: grid;
+
+    grid-template-columns: 1.5fr 1fr;
+
+    gap: 24px;
+
+    align-items: start;
+}
+
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+.payment-card,
+.order-card {
+    background: #ffffff;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.08);
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   BOOKING DETAILS
+========================================================= */
+
+.booking-section {
+    padding: 30px;
+}
+
+
+.section-title {
+    margin: 0 0 24px;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    color: #222;
+}
+
+
+/* =========================================================
+   MOVIE INFORMATION
+========================================================= */
+
+.movie-title {
+    font-size: 25px;
+
+    font-weight: 700;
+
+    color: #222;
+
+    margin-bottom: 22px;
+}
+
+
+.info-grid {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 20px;
+
+    padding-bottom: 25px;
+
+    border-bottom: 1px solid #eeeeee;
+}
+
+
+.info-item {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+
+.info-label {
+    font-size: 11px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.8px;
+
+    color: #999;
+
+    font-weight: 600;
+}
+
+
+.info-value {
+    font-size: 15px;
+
+    font-weight: 600;
+
+    color: #333;
+}
+
+
+/* =========================================================
+   SEATS
+========================================================= */
+
+.seats-heading {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-top: 25px;
+
+    margin-bottom: 16px;
+}
+
+
+.seats-heading h3 {
+    margin: 0;
+
+    font-size: 17px;
+
+    color: #222;
+}
+
+
+.seat-count {
+    background: #fce4ec;
+
+    color: #d81b60;
+
+    padding: 6px 12px;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+
+.seat-list {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    padding: 0;
+
+    margin: 0;
+
+    list-style: none;
+}
+
+
+.seat-item {
+    min-width: 65px;
+
+    padding: 10px 14px;
+
+    background: #f8f9fc;
+
+    border: 1px solid #e1e4e9;
+
+    border-radius: 8px;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #444;
+}
+
+
+/* =========================================================
+   RESERVATION WARNING
+========================================================= */
+
+.payment-notice {
+    margin-top: 25px;
+
+    padding: 16px 18px;
+
+    background: #fff8ed;
+
+    border: 1px solid #ffe0b2;
+
+    border-radius: 10px;
+}
+
+
+.notice-title {
+    display: block;
+
+    color: #8a5a00;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    margin-bottom: 5px;
+}
+
+
+.notice-text {
+    color: #9a6a16;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   ORDER SUMMARY
+========================================================= */
+
+.order-card {
+    position: sticky;
+
+    top: 100px;
+}
+
+
+.order-header {
+    padding: 25px 25px 20px;
+
+    border-bottom: 1px solid #eeeeee;
+}
+
+
+.order-header h2 {
+    margin: 0;
+
+    font-size: 20px;
+
+    color: #222;
+}
+
+
+.order-body {
+    padding: 25px;
+}
+
+
+/* =========================================================
+   PRICE ROWS
+========================================================= */
+
+.price-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 16px;
+
+    font-size: 14px;
+
+    color: #666;
+}
+
+
+.price-row strong {
+    color: #333;
+}
+
+
+.price-divider {
+    height: 1px;
+
+    background: #eeeeee;
+
+    margin: 20px 0;
+}
+
+
+.total-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 25px;
+}
+
+
+.total-label {
+    font-size: 16px;
+
+    font-weight: 700;
+
+    color: #222;
+}
+
+
+.total-price {
+    font-size: 24px;
+
+    font-weight: 700;
+
+    color: #e91e63;
+}
+
+
+/* =========================================================
+   PAYMENT METHOD
+========================================================= */
+
+.payment-method {
+    margin-bottom: 20px;
+}
+
+
+.payment-method-title {
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #555;
+
+    margin-bottom: 10px;
+}
+
+
+.payment-option {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 13px 15px;
+
+    border: 1px solid #e1e4e9;
+
+    border-radius: 9px;
+
+    background: #fafbfc;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #444;
+}
+
+
+.payment-icon {
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   PAY BUTTON
+========================================================= */
+
+.payment-btn {
+    width: 100%;
+
+    border: none;
+
+    background: #e91e63;
+
+    color: #ffffff;
+
+    border-radius: 9px;
+
+    padding: 15px 20px;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 5px 14px rgba(233, 30, 99, 0.25);
+
+    transition: 0.2s ease;
+}
+
+
+.payment-btn:hover {
+    background: #d81b60;
+
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   SECURITY MESSAGE
+========================================================= */
+
+.security-message {
+    margin-top: 15px;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    color: #999;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 800px) {
+
+    .payment-page {
+        padding: 30px 15px 60px;
+    }
+
+
+    .payment-header h1 {
+        font-size: 27px;
+    }
+
+
+    .payment-layout {
+        grid-template-columns: 1fr;
+
+        gap: 20px;
+    }
+
+
+    .order-card {
+        position: static;
+    }
+
+
+    .booking-section {
+        padding: 22px;
+    }
+
+
+    .order-header,
+    .order-body {
+        padding: 22px;
+    }
+
+
+    .info-grid {
+        grid-template-columns: 1fr;
+
+        gap: 15px;
+    }
+
+
+    .movie-title {
+        font-size: 22px;
+    }
+
+}
+
+</style>
+
+<div class="payment-page">
+
+
+<div class="payment-container">
+
+
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
+    <div class="payment-header">
+
+        <h1>
+            Complete Your Booking
+        </h1>
+
+        <p>
+            Review your booking details and proceed with payment
+        </p>
+
+    </div>
+
+
+
+    <!-- =================================================
+         MAIN LAYOUT
+    ================================================== -->
+
+    <div class="payment-layout">
+
+
+        <!-- =================================================
+             LEFT CARD — BOOKING DETAILS
+        ================================================== -->
+
+        <div class="payment-card">
+
+            <div class="booking-section">
+
+
+                <h2 class="section-title">
+                    Booking Details
+                </h2>
+
+
+                <!-- Movie -->
+
+                <div class="movie-title">
+
+                    {{ movie.name }}
+
+                </div>
+
+
+
+                <!-- Theater / Show -->
+
+                <div class="info-grid">
+
+
+                    <div class="info-item">
+
+                        <span class="info-label">
+                            Theater
+                        </span>
+
+                        <span class="info-value">
+                            {{ theater.name }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="info-item">
+
+                        <span class="info-label">
+                            Date & Time
+                        </span>
+
+                        <span class="info-value">
+                            {{ show_schedule.show_time|date:"d M Y, h:i A" }}
+                        </span>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- =================================================
+                     SELECTED SEATS
+                ================================================== -->
+
+                <div class="seats-heading">
+
+                    <h3>
+                        Selected Seats
+                    </h3>
+
+
+                    <span class="seat-count">
+
+                        {{ reservations|length }}
+                        Seat{{ reservations|length|pluralize }}
+
+                    </span>
+
+                </div>
+
+
+
+                <ul class="seat-list">
+
+                    {% for reservation in reservations %}
+
+                        <li class="seat-item">
+
+                            Seat
+                            {{ reservation.seat.seat_number }}
+
+                        </li>
+
+                    {% endfor %}
+
+                </ul>
+
+
+
+                <!-- =================================================
+                     WARNING
+                ================================================== -->
+
+                <div class="payment-notice">
+
+                    <span class="notice-title">
+
+                        ⏱ Complete your payment soon
+
+                    </span>
+
+                    <span class="notice-text">
+
+                        Your selected seats are temporarily reserved.
+                        Complete the payment before the reservation
+                        expires to confirm your booking.
+
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             RIGHT CARD — ORDER SUMMARY
+        ================================================== -->
+
+        <div class="order-card">
+
+
+            <div class="order-header">
+
+                <h2>
+                    Order Summary
+                </h2>
+
+            </div>
+
+
+            <div class="order-body">
+
+
+                <!-- Number of seats -->
+
+                <div class="price-row">
+
+                    <span>
+                        Tickets
+                    </span>
+
+                    <strong>
+                        {{ reservations|length }}
+                    </strong>
+
+                </div>
+
+
+                <!-- Ticket price -->
+
+                <div class="price-row">
+
+                    <span>
+                        Ticket Price
+                    </span>
+
+                    <strong>
+                        ₹{{ total_amount }}
+                    </strong>
+
+                </div>
+
+
+                <div class="price-divider"></div>
+
+
+                <!-- Total -->
+
+                <div class="total-row">
+
+                    <span class="total-label">
+                        Total Amount
+                    </span>
+
+                    <span class="total-price">
+                        ₹{{ total_amount }}
+                    </span>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     PAYMENT METHOD
+                ================================================== -->
+
+                <div class="payment-method">
+
+                    <span class="payment-method-title">
+                        Payment Method
+                    </span>
+
+
+                    <div class="payment-option">
+
+                        <span class="payment-icon">
+                            💳
+                        </span>
+
+                        <span>
+                            Secure Online Payment
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     PAYMENT FORM
+                ================================================== -->
+
+                <form method="POST" id="payment-form">
+
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="payment-btn"
+                    >
+
+                        Pay ₹{{ total_amount }}
+
+                    </button>
+
+                </form>
+
+
+
+                <!-- =================================================
+                     SECURITY
+                ================================================== -->
+
+                <div class="security-message">
+
+                    🔒 Your payment information is securely processed.
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
+{% if razorpay_order_id %}
+
+<script>
+
+    const options = {
+        key: "{{ razorpay_key_id }}",
+        amount: "{{ amount_in_paise }}",
+        currency: "INR",
+        name: "BookMySeat",
+        description: "Movie Ticket Booking",
+        order_id: "{{ razorpay_order_id }}",
+
+        method: {
+            netbanking: true
+        },
+
+        handler: function(response) {
+
+        fetch("{% url 'verify_payment' show_schedule.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert(data.message);
+            }
+
+        })
+        .catch(error => {
+
+            console.error("Payment verification error:", error);
+
+            alert(
+                "Payment verification failed. Please try again."
+            );
+
+        });
+
+    },
+
+    modal: {
+        ondismiss: function() {
+
+            fetch("{% url 'cancel_payment' show_schedule.id %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    razorpay_order_id: "{{ razorpay_order_id }}"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            })
+            .catch(error => {
+                console.error("Cancellation error:", error);
+            });
+
+        }
+    },
+
+    theme: {
+        color: "#e91e63"
+    }
+    };
+
+    alert("RAZORPAY SCRIPT IS RUNNING");
+    console.log("RAZORPAY KEY:", options.key);
+    console.log("RAZORPAY ORDER ID:", options.order_id);
+    console.log("RAZORPAY AMOUNT:", options.amount);
+
+    const razorpay = new Razorpay(options);
+
+    razorpay.open();
+
+</script>
+
+{% endif %}
+{% endblock %}

@@ -102,6 +102,11 @@
               <a class="nav-link" href="{% url 'profile' %}">Profile</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="{% url 'payment_history' %}">
+                  Payment History
+                </a>
+              </li>
+            <li class="nav-item">
               <form method="Post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button

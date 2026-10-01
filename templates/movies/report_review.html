@@ -1,0 +1,44 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="card">
+        <div class="card-body">
+
+            <h2>Report Review</h2>
+
+            <p>
+                <strong>{{ review.user.username }}</strong>
+                rated this movie
+                ⭐ {{ review.rating }}/5
+            </p>
+
+            <p>
+                {{ review.comment }}
+            </p>
+
+            <hr>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                {{ form.as_p }}
+
+                <button type="submit" class="btn btn-danger">
+                    Submit Report
+                </button>
+
+                <a href="{% url 'movie_detail' movie.id %}"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="card">
+        <div class="card-body">
+
+            <h2>Review {{ movie.name }}</h2>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                {{ form.as_p }}
+
+                <button type="submit" class="btn btn-primary">
+                    Submit Review
+                </button>
+
+                <a href="{% url 'movie_list' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

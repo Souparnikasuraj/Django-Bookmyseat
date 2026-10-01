@@ -13,8 +13,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
+from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -26,7 +28,10 @@ SECRET_KEY = "django-insecure-srgwe4=5+=pz&7n@sam#r157e^p7=5enqm7h%1)^__&s2w6dkj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app']
+ALLOWED_HOSTS = ['.vercel.app',
+                 '127.0.0.1',
+                 'localhost',
+                 'stifling-fender-disparate.ngrok-free.dev',]
 
 
 # Application definition
@@ -92,13 +97,10 @@ WSGI_APPLICATION = "bookmyseat.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.parse(
+        os.getenv("DATABASE_URL")
+    )
 }
-DATABASES['default'] = dj_database_url.parse('postgresql://django_bookmyseat_crbr_user:v0PMfbRk63bJS9J0OBLoNttoPZvm3LwT@dpg-d9pejevavr4c73bh0sa0-a.oregon-postgres.render.com/django_bookmyseat_crbr')
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -144,3 +146,10 @@ STORAGES = {
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+
+RAZORPAY_WEBHOOK_SECRET = os.environ.get(
+    'RAZORPAY_WEBHOOK_SECRET'
+)

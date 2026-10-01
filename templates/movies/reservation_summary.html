@@ -1,0 +1,552 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+
+<style>
+/* =========================================================
+   RESERVATION PAGE
+========================================================= */
+.reservation-page {
+    width: 100vw;
+    min-height: 100vh;
+
+    margin-left: calc(50% - 50vw);
+
+    background: #f6f7fb;
+
+    padding: 50px 5% 80px;
+
+    box-sizing: border-box;
+}
+
+.reservation-container {
+    width: 100%;
+    max-width: 1050px;
+    margin: 0 auto;
+}
+/* Header */
+.reservation-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.reservation-header h1 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: #222;
+}
+
+.reservation-header p {
+    margin-top: 8px;
+    color: #777;
+    font-size: 15px;
+}
+
+/* Summary Card */
+.summary-card {
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* Movie Information */
+.movie-info {
+    padding: 28px 30px;
+    background: linear-gradient(135deg, #fff, #fafafa);
+    border-bottom: 1px solid #eee;
+}
+
+.movie-title {
+    font-size: 25px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 22px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.info-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #999;
+    font-weight: 600;
+}
+
+.info-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Seats Section */
+.seats-section {
+    padding: 30px;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.section-heading h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #222;
+}
+
+.seat-count {
+    background: #fce4ec;
+    color: #d81b60;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Seat List */
+.seat-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.seat-item {
+    min-width: 70px;
+    padding: 12px 16px;
+    background: #f8f9fc;
+    border: 1px solid #e4e6eb;
+    border-radius: 9px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+}
+
+/* Countdown */
+.countdown-box {
+    margin-top: 28px;
+    padding: 18px 20px;
+    background: #fff8ed;
+    border: 1px solid #ffe0b2;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.countdown-label {
+    display: block;
+    color: #8a5a00;
+    font-size: 13px;
+    margin-bottom: 7px;
+}
+
+#countdown-time {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e65100;
+    letter-spacing: 1px;
+}
+
+/* Divider */
+.divider {
+    height: 1px;
+    background: #eeeeee;
+    margin: 0 30px;
+}
+
+/* Actions */
+.actions {
+    padding: 25px 30px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.modify-btn {
+    display: inline-block;
+    padding: 12px 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    color: #555;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.modify-btn:hover {
+    background: #f5f5f5;
+    color: #222;
+}
+
+.payment-btn {
+    display: inline-block;
+    padding: 13px 25px;
+    background: #e91e63;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 5px 14px rgba(233, 30, 99, 0.25);
+    transition: 0.2s ease;
+}
+
+.payment-btn:hover {
+    background: #d81b60;
+    transform: translateY(-1px);
+    color: #fff;
+}
+
+/* Expired State */
+.expired-box {
+    padding: 35px 30px;
+    text-align: center;
+    color: #777;
+}
+
+.expired-icon {
+    font-size: 42px;
+    margin-bottom: 12px;
+}
+
+.expired-box p {
+    margin: 0;
+    font-size: 15px;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+
+    .reservation-page {
+        padding: 30px 15px 60px;
+    }
+
+    .reservation-header h1 {
+        font-size: 27px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .movie-info,
+    .seats-section {
+        padding: 22px;
+    }
+
+    .divider {
+        margin: 0 22px;
+    }
+
+    .actions {
+        padding: 22px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .modify-btn,
+    .payment-btn {
+        text-align: center;
+    }
+}
+</style>
+
+<div class="reservation-page">
+
+
+<div class="reservation-container">
+
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
+    <div class="reservation-header">
+
+        <h1>Reservation Summary</h1>
+
+        <p>
+            Review your seats before proceeding to payment
+        </p>
+
+    </div>
+
+
+    <!-- =================================================
+         MAIN CARD
+    ================================================== -->
+
+    <div class="summary-card">
+
+        {% if reservations %}
+
+            <!-- =================================================
+                 MOVIE / SHOW INFORMATION
+            ================================================== -->
+
+            <div class="movie-info">
+
+                <div class="movie-title">
+                    {{ movie.name }}
+                </div>
+
+                <div class="info-grid">
+
+                    <div class="info-item">
+
+                        <span class="info-label">
+                            Theater
+                        </span>
+
+                        <span class="info-value">
+                            {{ theater.name }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="info-item">
+
+                        <span class="info-label">
+                            Date & Time
+                        </span>
+
+                        <span class="info-value">
+                            {{ show_schedule.show_time|date:"d M Y, h:i A" }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="info-item">
+
+                        <span class="info-label">
+                            Reservation
+                        </span>
+
+                        <span class="info-value">
+                            {{ reservations|length }} Seat{{ reservations|length|pluralize }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 SEATS
+            ================================================== -->
+
+            <div class="seats-section">
+
+                <div class="section-heading">
+
+                    <h3>
+                        Your Reserved Seats
+                    </h3>
+
+                    <span class="seat-count">
+                        {{ reservations|length }} Selected
+                    </span>
+
+                </div>
+
+
+                <ul class="seat-list">
+
+                    {% for reservation in reservations %}
+
+                        <li class="seat-item">
+                            Seat {{ reservation.seat.seat_number }}
+                        </li>
+
+                    {% endfor %}
+
+                </ul>
+
+
+                <!-- =================================================
+                     COUNTDOWN
+                ================================================== -->
+
+                <div
+                    id="countdown-box"
+                    class="countdown-box"
+                    data-reserved-until="{{ reservations.0.reserved_until|date:'c' }}"
+                >
+
+                    <span class="countdown-label">
+                        Your seats are temporarily reserved for
+                    </span>
+
+                    <span id="countdown-time">
+                        02:00
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="divider"></div>
+
+
+            <!-- =================================================
+                 ACTIONS
+            ================================================== -->
+
+            <div class="actions">
+
+                <a
+                    href="{% url 'book_seats' show_schedule.id %}"
+                    class="modify-btn"
+                >
+                    ← Modify Seats
+                </a>
+
+
+                <a
+                    href="{% url 'payment' show_schedule.id %}"
+                    class="payment-btn"
+                >
+                    Proceed to Payment →
+                </a>
+
+            </div>
+
+
+        {% else %}
+
+            <!-- =================================================
+                 EXPIRED RESERVATION
+            ================================================== -->
+
+            <div class="expired-box">
+
+                <div class="expired-icon">
+                    ⏳
+                </div>
+
+                <p>
+                    Your reservation has expired or no seats are
+                    currently reserved.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+</div>
+
+<!-- =========================================================
+     COUNTDOWN SCRIPT
+========================================================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const countdownBox =
+        document.getElementById("countdown-box");
+
+    const countdownTime =
+        document.getElementById("countdown-time");
+
+
+    if (!countdownBox || !countdownTime) {
+        return;
+    }
+
+
+    const reservedUntil =
+        new Date(
+            countdownBox.dataset.reservedUntil
+        ).getTime();
+
+
+    function updateCountdown() {
+
+        const remaining =
+            reservedUntil - new Date().getTime();
+
+
+        if (remaining <= 0) {
+
+            countdownTime.textContent = "00:00";
+
+            countdownBox.innerHTML =
+                "<span style='color:#c62828; font-weight:600;'>" +
+                "Your reservation has expired. Refreshing..." +
+                "</span>";
+
+
+            setTimeout(function () {
+
+                window.location.reload();
+
+            }, 1000);
+
+
+            return;
+        }
+
+
+        const totalSeconds =
+            Math.floor(remaining / 1000);
+
+
+        const minutes =
+            Math.floor(totalSeconds / 60);
+
+
+        const seconds =
+            totalSeconds % 60;
+
+
+        countdownTime.textContent =
+            String(minutes).padStart(2, "0") +
+            ":" +
+            String(seconds).padStart(2, "0");
+
+    }
+
+
+    updateCountdown();
+
+
+    setInterval(
+        updateCountdown,
+        1000
+    );
+
+});
+
+</script>
+
+{% endblock %}

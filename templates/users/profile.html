@@ -1,161 +1,751 @@
-{% extends "users/basic.html" %} {% block content %}
+{% extends "users/basic.html" %}
 
-<div class="container py-5">
-  <div class="row">
-    <div class="col-lg-4 mb-4">
-      <!-- User Info Card -->
-      <div class="card shadow">
-        <div class="card-body text-center">
-          <div class="mb-3">
-            <i class="fas fa-user-circle fa-6x text-primary"></i>
-          </div>
-          <h3 class="card-title mb-0">{{ user.username }}</h3>
-          <p class="text-muted mb-3">{{ user.email }}</p>
-            <div class="d-flex justify-content-center">
-                <a href="#" class="btn btn-outline-primary mr-2">
-                    <i class="fas fa-envelope mr-2"></i> Message
-                </a>
-                <a href="{% url 'password_reset' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-key mr-2"></i> Reset Password
-                </a>
-            </div>
+{% block content %}
+
+<div class="profile-page">
+
+  <div class="container py-5">
+
+<div class="row g-4">
+
+  <!-- ================= USER PROFILE ================= -->
+  <div class="col-lg-4">
+
+    <div class="profile-card shadow-sm">
+
+      <div class="profile-cover"></div>
+
+      <div class="profile-content text-center">
+
+        <div class="profile-avatar">
+          <i class="fas fa-user"></i>
         </div>
+
+        <h3 class="username">{{ user.username }}</h3>
+        <p class="email">
+          <i class="fas fa-envelope me-2"></i>
+          {{ user.email }}
+        </p>
+
+        <div class="profile-actions">
+
+          <a href="{% url 'password_reset' %}"
+             class="btn btn-outline-primary">
+            <i class="fas fa-key me-2"></i>
+            Reset Password
+          </a>
+
+        </div>
+
       </div>
+
     </div>
-    
-    <div class="col-lg-8">
-      <!-- Profile Update Form Card -->
-      <div class="card shadow mb-4">
-        <div class="card-header bg-primary text-white">
-          <h4 class="mb-0"><i class="fas fa-user-edit me-2"></i> Update Profile</h4>
-        </div>
-        <div class="card-body">
-          <form method="POST">
-            {% csrf_token %}
-            {% for field in u_form %}
-              <div class="mb-3">
-                <label for="{{ field.id_for_label }}" class="form-label">
-                  <i class="fas fa-{% if field.name == 'username' %}user{% elif field.name == 'email' %}envelope{% else %}info-circle{% endif %} me-2"></i>
-                  {{ field.label }}
-                </label>
-                {{ field.errors }}
-                {{ field }}
-                {% if field.help_text %}
-                  <small class="form-text text-muted">{{ field.help_text }}</small>
-                {% endif %}
-              </div>
-            {% endfor %}
-            <button class="btn btn-primary w-100" type="submit"><i class="fas fa-save me-2"></i> Update Profile</button>
-          </form>
-        </div>
-      </div>
-      
-      <!-- Bookings Card -->
-      <div class="card shadow">
-        <div class="card-header bg-success text-white">
-          <h4 class="mb-0"><i class="fas fa-ticket-alt me-2"> </i> Your Bookings</h4>
-        </div>
-        <div class="card-body">
-          {% if bookings %}
-            <div class="row row-cols-1 row-cols-md-2 g-4">
-              {% for booking in bookings %}
-                <div class="col">
-                  <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                      <h5 class="card-title">{{ booking.movie.name }}</h5>
-                      <p class="card-text">
-                        <i class="fas fa-film me-2 text-muted"> </i>  {{ booking.theater.name }}<br>
-                        <i class="fas fa-chair me-2 text-muted"> </i>  Seat: {{ booking.seat.seat_number }}<br>
-                        <i class="far fa-clock me-2 text-muted"> </i>  {{ booking.booked_at|date:"F d, Y H:i" }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="text-center py-5">
-              <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
-              <p class="lead mb-0">No bookings yet. Time to plan your next movie night!</p>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+
   </div>
+
+
+  <!-- ================= RIGHT CONTENT ================= -->
+  <div class="col-lg-8">
+
+    <!-- Profile Update -->
+    <div class="content-card shadow-sm mb-4">
+
+      <div class="section-header">
+        <div>
+          <h4>
+            <i class="fas fa-user-edit me-2"></i>
+            Update Profile
+          </h4>
+          <p>Keep your account information up to date.</p>
+        </div>
+      </div>
+
+      <div class="card-body-custom">
+
+        <form method="POST">
+
+          {% csrf_token %}
+
+          {% for field in u_form %}
+
+            <div class="form-group mb-3">
+
+              <label for="{{ field.id_for_label }}">
+                {% if field.name == 'username' %}
+                  <i class="fas fa-user me-2"></i>
+                {% elif field.name == 'email' %}
+                  <i class="fas fa-envelope me-2"></i>
+                {% else %}
+                  <i class="fas fa-info-circle me-2"></i>
+                {% endif %}
+
+                {{ field.label }}
+              </label>
+
+              {{ field.errors }}
+
+              {{ field }}
+
+              {% if field.help_text %}
+                <small class="form-help">
+                  {{ field.help_text }}
+                </small>
+              {% endif %}
+
+            </div>
+
+          {% endfor %}
+
+          <button class="btn btn-primary update-btn"
+                  type="submit">
+
+            <i class="fas fa-save me-2"></i>
+            Update Profile
+
+          </button>
+
+        </form>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================= BOOKINGS ================= -->
+    <div class="content-card shadow-sm">
+
+      <div class="section-header booking-header">
+
+        <div>
+          <h4>
+            <i class="fas fa-ticket-alt me-2"></i>
+            Your Bookings
+          </h4>
+
+          <p>
+            Movies you've booked through BookMySeat.
+          </p>
+        </div>
+
+        {% if bookings %}
+          <span class="booking-count">
+            {{ bookings|length }} Booking{{ bookings|length|pluralize }}
+          </span>
+        {% endif %}
+
+      </div>
+
+
+      <div class="card-body-custom">
+
+        {% if bookings %}
+
+          <div class="booking-list">
+
+            {% for booking in bookings %}
+
+              <div class="booking-card">
+
+                <!-- Ticket Icon -->
+                <div class="ticket-icon">
+                  <i class="fas fa-film"></i>
+                </div>
+
+
+                <!-- Movie Information -->
+                <div class="booking-info">
+
+                  <h5>
+                    {{ booking.show_schedule.movie.name }}
+                  </h5>
+
+                  <div class="booking-details">
+
+                    <div>
+                      <i class="fas fa-building"></i>
+                      <span>
+                        {{ booking.show_schedule.theater.name }}
+                      </span>
+                    </div>
+
+                    <div>
+                      <i class="fas fa-desktop"></i>
+                      <span>
+                        {{ booking.show_schedule.screen.name }}
+                      </span>
+                    </div>
+
+                    <div>
+                      <i class="fas fa-chair"></i>
+                      <span>
+                        Seat {{ booking.seat.seat_number }}
+                      </span>
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                <!-- Show Time -->
+                <div class="show-time">
+
+                  <span class="detail-label">
+                    SHOW TIME
+                  </span>
+
+                  <strong>
+                    {{ booking.show_schedule.show_time|date:"d M Y" }}
+                  </strong>
+
+                  <span>
+                    {{ booking.show_schedule.show_time|date:"h:i A" }}
+                  </span>
+
+                </div>
+
+
+                <!-- Booking Status -->
+                <div class="booking-status">
+
+                  <span class="status-badge">
+                    <i class="fas fa-check-circle"></i>
+                    Confirmed
+                  </span>
+
+                  <small>
+                    Booked {{ booking.booked_at|date:"d M Y, h:i A" }}
+                  </small>
+
+                </div>
+
+              </div>
+
+            {% endfor %}
+
+          </div>
+
+        {% else %}
+
+          <div class="empty-bookings">
+
+            <div class="empty-icon">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+
+            <h5>No bookings yet</h5>
+
+            <p>
+              You haven't booked any movie tickets yet.
+              Find a movie and reserve your seats!
+            </p>
+
+            <a href="{% url 'movie_list' %}"
+               class="btn btn-primary">
+
+              <i class="fas fa-film me-2"></i>
+              Browse Movies
+
+            </a>
+
+          </div>
+
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
 
-<!-- Font Awesome CDN -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-<!-- Custom CSS -->
+  </div>
+
+</div>
+
+<!-- ================= FONT AWESOME ================= -->
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<!-- ================= CSS ================= -->
+
 <style>
+
   body {
-    background-color: #f8f9fa;
+    background: #f5f7fb;
   }
-  .card {
-    border-radius: 15px;
-    border: none;
-    transition: transform 0.3s ease-in-out;
+
+  .profile-page {
+    min-height: 100vh;
   }
-  .card:hover {
-    transform: translateY(-5px);
+
+
+  /* ================= PROFILE CARD ================= */
+
+  .profile-card {
+    background: white;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
   }
-  .card-header {
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
+
+  .profile-cover {
+    height: 105px;
+    background: linear-gradient(
+      135deg,
+      #667eea,
+      #764ba2
+    );
   }
-  /* Style form fields */
-  form input, form select, form textarea {
+
+  .profile-content {
+    padding: 0 25px 30px;
+  }
+
+  .profile-avatar {
+    width: 90px;
+    height: 90px;
+    margin: -45px auto 15px;
+
+    border-radius: 50%;
+
+    background: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+
+    font-size: 40px;
+    color: #667eea;
+  }
+
+  .username {
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .email {
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 25px;
+  }
+
+  .profile-actions .btn {
+    border-radius: 10px;
+    padding: 9px 18px;
+  }
+
+
+  /* ================= CONTENT CARDS ================= */
+
+  .content-card {
+    background: white;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 20px 24px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border-bottom: 1px solid #eee;
+  }
+
+  .section-header h4 {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .section-header h4 i {
+    color: #667eea;
+  }
+
+  .section-header p {
+    margin: 5px 0 0;
+    color: #888;
+    font-size: 13px;
+  }
+
+  .card-body-custom {
+    padding: 24px;
+  }
+
+
+  /* ================= FORM ================= */
+
+  .form-group label {
     display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .form-group label i {
+    color: #667eea;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+
+    display: block;
+
     width: 100%;
-    padding: 0.375rem 0.75rem;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.5;
-    color: #212529;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+    padding: 11px 13px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 10px;
+
+    background: #fff;
+
+    transition: 0.2s;
   }
-  form input:focus, form select:focus, form textarea:focus {
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+
+    border-color: #667eea;
+
+    outline: none;
+
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
   }
-  @media (max-width: 767.98px) {
-    .card-body {
-      padding: 1rem;
+
+  .form-help {
+    color: #888;
+    display: block;
+    margin-top: 5px;
+  }
+
+  .update-btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+
+  /* ================= BOOKING HEADER ================= */
+
+  .booking-count {
+    background: #eef2ff;
+    color: #667eea;
+
+    padding: 7px 12px;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+
+  /* ================= BOOKING CARD ================= */
+
+  .booking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .booking-card {
+
+    display: grid;
+
+    grid-template-columns: 55px 1fr auto auto;
+
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 18px;
+
+    border: 1px solid #eee;
+
+    border-radius: 14px;
+
+    transition: 0.25s;
+
+    position: relative;
+
+    background: #fff;
+  }
+
+  .booking-card:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 7px 20px rgba(0,0,0,0.08);
+
+    border-color: #ddd;
+  }
+
+
+  /* Ticket icon */
+
+  .ticket-icon {
+
+    width: 55px;
+    height: 55px;
+
+    border-radius: 12px;
+
+    background: #eef2ff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #667eea;
+
+    font-size: 22px;
+  }
+
+
+  /* Movie information */
+
+  .booking-info h5 {
+
+    margin: 0 0 10px;
+
+    font-weight: 700;
+
+    color: #222;
+  }
+
+  .booking-details {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    font-size: 13px;
+
+    color: #777;
+  }
+
+  .booking-details div {
+
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .booking-details i {
+    color: #667eea;
+  }
+
+
+  /* Show time */
+
+  .show-time {
+
+    text-align: center;
+
+    border-left: 1px dashed #ddd;
+
+    padding-left: 20px;
+
+    min-width: 110px;
+  }
+
+  .show-time strong {
+
+    display: block;
+
+    font-size: 15px;
+
+    margin-top: 3px;
+  }
+
+  .show-time span:last-child {
+
+    display: block;
+
+    color: #667eea;
+
+    font-weight: 600;
+
+    font-size: 14px;
+
+    margin-top: 2px;
+  }
+
+  .detail-label {
+
+    font-size: 10px;
+
+    letter-spacing: 1px;
+
+    color: #999;
+  }
+
+
+  /* Status */
+
+  .booking-status {
+
+    border-left: 1px dashed #ddd;
+
+    padding-left: 18px;
+
+    text-align: right;
+
+    min-width: 120px;
+  }
+
+  .status-badge {
+
+    display: inline-block;
+
+    padding: 6px 10px;
+
+    border-radius: 20px;
+
+    background: #e9f8ef;
+
+    color: #198754;
+
+    font-size: 12px;
+
+    font-weight: 600;
+  }
+
+  .booking-status small {
+
+    display: block;
+
+    margin-top: 7px;
+
+    color: #999;
+
+    font-size: 10px;
+  }
+
+
+  /* ================= EMPTY STATE ================= */
+
+  .empty-bookings {
+
+    text-align: center;
+
+    padding: 45px 20px;
+  }
+
+  .empty-icon {
+
+    width: 80px;
+    height: 80px;
+
+    margin: 0 auto 18px;
+
+    border-radius: 50%;
+
+    background: #f0f2f8;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 32px;
+
+    color: #999;
+  }
+
+  .empty-bookings h5 {
+
+    font-weight: 700;
+
+    margin-bottom: 8px;
+  }
+
+  .empty-bookings p {
+
+    color: #888;
+
+    max-width: 400px;
+
+    margin: 0 auto 20px;
+
+    font-size: 14px;
+  }
+
+  .empty-bookings .btn {
+
+    border-radius: 10px;
+
+    padding: 10px 18px;
+  }
+
+
+  /* ================= MOBILE ================= */
+
+  @media (max-width: 991px) {
+
+    .booking-card {
+
+      grid-template-columns: 55px 1fr;
+
     }
+
+    .show-time,
+    .booking-status {
+
+      grid-column: 2;
+
+      border-left: none;
+
+      border-top: 1px dashed #ddd;
+
+      padding: 12px 0 0;
+
+      text-align: left;
+
+    }
+
+    .booking-status {
+
+      min-width: auto;
+
+    }
+
   }
+
+  @media (max-width: 575px) {
+
+    .card-body-custom {
+      padding: 16px;
+    }
+
+    .section-header {
+      padding: 18px;
+    }
+
+    .booking-card {
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .booking-details {
+      flex-direction: column;
+      gap: 7px;
+    }
+
+  }
+
 </style>
-<!-- <div class="container mt-4">
-    <h2>Profile</h2>
-    <form method="POST">
-      {% csrf_token %}
-      {{ u_form.as_p }}
-      <div>
-        <button class="btn btn-primary mt-2" type="submit">Update Profile</button>
-      </div>
-    </form>
-   
-    <p>Want to change your password? <a href="{% url 'password_reset' %}">Reset it here</a>.</p>
 
-    <h2>Booking</h2>
-    <ul>
-      {% for booking in bookings %}
-      <li>
-        movie:{{booking.movie.name}}<br>
-        theater:{{booking.theater.name}}<br>
-        seat:{{booking.seat.seat_number}}<br>
-        bookedat:{{booking.booked_at}}
-
-      </li>
-      {% empty %}
-      <li>no bookings yet</li>
-      {% endfor %}
-    </ul>
-  </div> -->
 {% endblock %}

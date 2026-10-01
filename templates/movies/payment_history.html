@@ -1,0 +1,221 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+
+<style>
+    .payment-history-page {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px 50px;
+    }
+
+    .history-header {
+        margin-bottom: 30px;
+    }
+
+    .history-header h2 {
+        margin: 0 0 8px;
+        font-size: 32px;
+        font-weight: 700;
+    }
+
+    .history-header p {
+        margin: 0;
+        color: #777;
+        font-size: 15px;
+    }
+
+    .payment-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        border: 1px solid #eee;
+    }
+
+    .payment-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 20px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .movie-name {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .payment-date {
+        margin: 6px 0 0;
+        color: #888;
+        font-size: 13px;
+    }
+
+    .status {
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .status-success {
+        background: #e8f7ee;
+        color: #16834b;
+    }
+
+    .status-cancelled {
+        background: #fff1f1;
+        color: #d64545;
+    }
+
+    .status-failed {
+        background: #fff4e5;
+        color: #c77700;
+    }
+
+    .status-pending {
+        background: #f1f1f1;
+        color: #666;
+    }
+
+    .payment-details {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+
+    .detail-item {
+        background: #f8f8f8;
+        padding: 14px 16px;
+        border-radius: 10px;
+    }
+
+    .detail-label {
+        display: block;
+        color: #888;
+        font-size: 12px;
+        margin-bottom: 5px;
+    }
+
+    .detail-value {
+        font-size: 15px;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .amount {
+        font-size: 18px;
+    }
+
+    .empty-state {
+        text-align: center;
+        background: #fff;
+        border-radius: 14px;
+        padding: 60px 20px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    .empty-state h3 {
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        color: #777;
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .payment-top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .payment-details {
+            grid-template-columns: 1fr;
+        }
+
+        .history-header h2 {
+            font-size: 26px;
+        }
+    }
+</style>
+
+<div class="payment-history-page">
+
+<div class="history-header">
+    <h2>Payment History</h2>
+    <p>View your previous movie booking payments and their status.</p>
+</div>
+
+{% if payments %}
+
+    {% for payment in payments %}
+
+        <div class="payment-card">
+
+            <div class="payment-top">
+
+                <div>
+                    <h3 class="movie-name">
+                        {{ payment.booking.show_schedule.movie.name }}
+                    </h3>
+
+                    <p class="payment-date">
+                        {{ payment.created_at|date:"d M Y, h:i A" }}
+                    </p>
+                </div>
+
+                <span class="status status-{{ payment.payment_status }}">
+                    {{ payment.payment_status }}
+                </span>
+
+            </div>
+
+            <div class="payment-details">
+
+                <div class="detail-item">
+                    <span class="detail-label">Seat</span>
+                    <span class="detail-value">
+                        {{ payment.booking.seat.seat_number }}
+                    </span>
+                </div>
+
+                <div class="detail-item">
+                    <span class="detail-label">Amount</span>
+                    <span class="detail-value amount">
+                        ₹{{ payment.amount }}
+                    </span>
+                </div>
+
+                <div class="detail-item">
+                    <span class="detail-label">Order ID</span>
+                    <span class="detail-value">
+                        {{ payment.razorpay_order_id }}
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+{% else %}
+
+    <div class="empty-state">
+        <h3>No Payment History</h3>
+        <p>You haven't made any movie booking payments yet.</p>
+    </div>
+
+{% endif %}
+
+
+</div>
+
+{% endblock %}
