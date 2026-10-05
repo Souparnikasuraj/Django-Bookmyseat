@@ -61,4 +61,11 @@ urlpatterns=[
         views.movie_detail,
         name='movie_detail'
     ),
+    path(
+        'admin-dashboard/export-bookings/',
+        views.export_bookings_csv,
+        name='export_bookings_csv'
+    ),
+
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
 ]

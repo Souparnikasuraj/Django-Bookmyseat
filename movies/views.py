@@ -11,18 +11,24 @@ from .models import (
     Payment,
 )
 from .forms import ReviewForm, ReviewReportForm
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.db.models import Avg
 from django.contrib import messages
 from urllib.parse import urlparse, parse_qs
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, timedelta, time
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import razorpay
 from django.conf import settings
 from decimal import Decimal
+from django.db.models import Sum, Count, F, Q
+from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYear
+from django.db.models.functions import ExtractHour
+import csv
+from django.http import HttpResponse
 
 razorpay_client = razorpay.Client(
     auth=(
@@ -693,7 +699,8 @@ def add_review(request, movie_id):
 
     booking = Booking.objects.filter(
         user=request.user,
-        movie=movie
+        show_schedule__movie=movie,
+        status='booked'
     ).first()
 
     if not booking:
@@ -1184,3 +1191,338 @@ def payment_history(request):
             'payments': payments
         }
     )
+
+def admin_check(user):
+    return (
+        user.is_authenticated
+        and user.is_staff
+        and user.has_perm('movies.view_booking')
+    )
+
+@user_passes_test(admin_check, login_url='/login/')
+def admin_dashboard(request):
+    from datetime import datetime, timedelta
+
+    today = timezone.localdate()
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = today - timedelta(days=6)
+
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    else:
+        end_date = today
+
+    start_datetime = timezone.make_aware(
+        datetime.combine(start_date, time.min)
+    )
+
+    end_datetime = timezone.make_aware(
+        datetime.combine(
+            end_date + timedelta(days=1),
+            time.min
+        )
+    )
+    # Dashboard statistics
+    total_bookings = Booking.objects.filter(
+        booked_at__gte=start_datetime,
+        booked_at__lt=end_datetime
+    ).count()
+
+    successful_payments = Payment.objects.filter(
+        payment_status='success',
+        created_at__date__range=(start_date, end_date)
+    ).count()
+
+    total_revenue = Payment.objects.filter(
+        payment_status='success',
+        created_at__date__range=(start_date, end_date)
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    daily_revenue = Payment.objects.filter(
+        payment_status='success',
+        created_at__date=timezone.localdate()
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    weekly_revenue = Payment.objects.filter(
+        payment_status='success',
+        created_at__date__gte=timezone.localdate() - timedelta(days=6),
+        created_at__date__lte=timezone.localdate()
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    monthly_revenue = Payment.objects.filter(
+        payment_status='success',
+        created_at__year=timezone.localdate().year,
+        created_at__month=timezone.localdate().month
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    yearly_revenue = Payment.objects.filter(
+        payment_status='success',
+        created_at__year=timezone.localdate().year
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    total_users = User.objects.filter(
+        date_joined__date__range=(start_date, end_date)
+    ).count()
+
+    user_growth = list(
+        User.objects.filter(
+            date_joined__date__range=(start_date, end_date)
+        ).annotate(
+            date=TruncDate('date_joined')
+        ).values(
+            'date'
+        ).annotate(
+            users=Count('id')
+        ).order_by('date')
+    )
+
+    for item in user_growth:
+        item['date'] = item['date'].strftime('%Y-%m-%d')
+
+    booking_trends = list(
+        Booking.objects.filter(
+            booked_at__gte=start_datetime,
+            booked_at__lt=end_datetime
+        ).annotate(
+            date=TruncDate('booked_at')
+        ).values(
+            'date'
+        ).annotate(
+            bookings=Count('id')
+        ).order_by('date')
+    )
+
+    for item in booking_trends:
+        item['date'] = item['date'].strftime('%Y-%m-%d')
+
+    theater_occupancy = Theater.objects.annotate(
+        total_seats=Count('screens__seats', distinct=True),
+        booked_seats=Count(
+            'show_schedules__bookings',
+            filter=Q(
+                show_schedules__bookings__status='booked',
+                show_schedules__bookings__booked_at__gte=start_datetime,
+                show_schedules__bookings__booked_at__lt=end_datetime
+            ),
+            distinct=True
+        )
+    )
+    most_booked_movies = Movie.objects.annotate(
+        booked_seats=Count(
+            'show_schedules__bookings',
+            filter=Q(
+                show_schedules__bookings__status='booked',
+                show_schedules__bookings__booked_at__gte=start_datetime,
+                show_schedules__bookings__booked_at__lt=end_datetime
+            ),
+            distinct=True
+        )
+    ).order_by('-booked_seats')
+
+    top_performing_theaters = Theater.objects.annotate(
+        revenue=Sum(
+            'show_schedules__bookings__payments__amount',
+            filter=Q(
+                show_schedules__bookings__payments__payment_status='success',
+                show_schedules__bookings__payments__created_at__gte=start_datetime,
+                show_schedules__bookings__payments__created_at__lt=end_datetime
+            )
+        )
+    ).order_by('-revenue')
+
+    peak_booking_hours = list(
+        Booking.objects.filter(
+            status='booked',
+            booked_at__gte=start_datetime,
+            booked_at__lt=end_datetime
+        ).annotate(
+            hour=ExtractHour('booked_at')
+        ).values(
+            'hour'
+        ).annotate(
+            bookings=Count('id')
+        ).order_by('-bookings')
+    )
+    cancellation_stats = Payment.objects.filter(
+        payment_status='cancelled',
+        created_at__gte=start_datetime,
+        created_at__lt=end_datetime
+    ).aggregate(
+        total_cancellations=Count('id'),
+        cancelled_amount=Sum('amount')
+    )
+    refund_stats = Payment.objects.filter(
+        payment_status='refunded',
+        created_at__gte=start_datetime,
+        created_at__lt=end_datetime
+    ).aggregate(
+        total_refunds=Count('id'),
+        refunded_amount=Sum('amount')
+    )
+    # Revenue trends
+    revenue_trends = list(
+        Payment.objects.filter(
+            payment_status='success',
+            created_at__gte=start_datetime,
+            created_at__lt=end_datetime
+        ).annotate(
+            date=TruncDate('created_at')
+        ).values(
+            'date'
+        ).annotate(
+            revenue=Sum('amount')
+        ).order_by('date')
+    )
+
+    for item in revenue_trends:
+        item['date'] = item['date'].strftime('%Y-%m-%d')
+
+    recent_bookings = Booking.objects.filter(
+        booked_at__gte=start_datetime,
+        booked_at__lt=end_datetime
+    ).select_related(
+        'user',
+        'seat',
+        'show_schedule'
+    ).order_by('-booked_at')
+
+    recent_payments = Payment.objects.filter(
+        created_at__gte=start_datetime,
+        created_at__lt=end_datetime
+    ).select_related(
+        'user',
+        'booking'
+    ).order_by('-created_at')
+
+    return render(
+        request,
+        'movies/admin_dashboard.html',
+        {
+            'start_date': start_date,
+            'end_date': end_date,
+            'total_bookings': total_bookings,
+            'successful_payments': successful_payments,
+            'total_revenue': total_revenue,
+            'daily_revenue': daily_revenue,
+            'weekly_revenue': weekly_revenue,
+            'monthly_revenue': monthly_revenue,
+            'yearly_revenue': yearly_revenue,
+            'total_users': total_users,
+            'user_growth': user_growth,
+            'booking_trends': booking_trends,
+            'recent_bookings': recent_bookings,
+            'recent_payments': recent_payments,
+            'revenue_trends': revenue_trends,
+            'theater_occupancy': theater_occupancy,
+            'most_booked_movies': most_booked_movies,
+            'top_performing_theaters': top_performing_theaters,
+            'peak_booking_hours': peak_booking_hours,
+            'cancellation_stats': cancellation_stats,
+            'refund_stats': refund_stats,
+        }
+    )
+@login_required
+@user_passes_test(admin_check, login_url='/login/')
+def export_bookings_csv(request):
+    import datetime
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    today = timezone.localdate()
+
+    if start_date:
+        start_date = datetime.datetime.strptime(
+            start_date, '%Y-%m-%d'
+        ).date()
+    else:
+        start_date = today - datetime.timedelta(days=6)
+
+    if end_date:
+        end_date = datetime.datetime.strptime(
+            end_date, '%Y-%m-%d'
+        ).date()
+    else:
+        end_date = today
+
+    start_datetime = timezone.make_aware(
+        datetime.datetime.combine(
+            start_date,
+            datetime.time.min
+        )
+    )
+
+    end_datetime = timezone.make_aware(
+        datetime.datetime.combine(
+            end_date + datetime.timedelta(days=1),
+            datetime.time.min
+        )
+    )
+
+    bookings = Booking.objects.filter(
+        booked_at__gte=start_datetime,
+        booked_at__lt=end_datetime
+    ).select_related(
+        'user',
+        'seat',
+        'show_schedule',
+        'show_schedule__movie',
+        'show_schedule__theater'
+    ).values(
+        'id',
+        'user__username',
+        'show_schedule__movie__name',
+        'show_schedule__theater__name',
+        'seat__seat_number',
+        'status',
+        'booked_at'
+    ).order_by('-booked_at')
+
+    response = HttpResponse(
+        content_type='text/csv'
+    )
+
+    response['Content-Disposition'] = (
+        'attachment; filename="bookings_report.csv"'
+    )
+
+    writer = csv.writer(response)
+
+    writer.writerow([
+        'Booking ID',
+        'User',
+        'Movie',
+        'Theater',
+        'Seat',
+        'Status',
+        'Booked At'
+    ])
+
+    for booking in bookings:
+        writer.writerow([
+            booking['id'],
+            booking['user__username'],
+            booking['show_schedule__movie__name'],
+            booking['show_schedule__theater__name'],
+            booking['seat__seat_number'],
+            booking['status'],
+            booking['booked_at'],
+        ])
+
+    return response

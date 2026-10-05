@@ -144,7 +144,10 @@ class ShowSchedule(models.Model):
     def __str__(self):
         return f"{self.movie.name} - {self.theater.name} - {self.show_time}"
 
-
+    class Meta:
+        indexes = [
+            models.Index(fields=['show_time']),
+        ]
 class Seat(models.Model):
     screen = models.ForeignKey(
         Screen,
@@ -207,6 +210,12 @@ class Booking(models.Model):
             )
         ]
 
+        indexes = [
+            models.Index(fields=['booked_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['booked_at', 'status']),
+        ]
+
     def __str__(self):
         return (
             f"Booking by {self.user.username} "
@@ -220,6 +229,7 @@ class Payment(models.Model):
         ('success', 'Success'),
         ('failed', 'Failed'),
         ('cancelled', 'Cancelled'),
+        ('refunded', 'Refunded'),
     ]
 
     booking = models.ForeignKey(
@@ -275,6 +285,12 @@ class Payment(models.Model):
             f"Payment - {self.user.username} - "
             f"{self.amount} - {self.payment_status}"
         )
+    class Meta:
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['payment_status']),
+            models.Index(fields=['created_at', 'payment_status']),
+        ]
 
 class Review(models.Model):
     movie = models.ForeignKey(

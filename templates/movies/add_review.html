@@ -2,28 +2,362 @@
 
 {% block content %}
 
-<div class="container mt-5">
+<style>
 
-    <div class="card">
-        <div class="card-body">
+/* =========================================================
+   GENERAL PAGE
+========================================================= */
 
-            <h2>Review {{ movie.name }}</h2>
+.movie-page {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    background: #f7f7f8;
+    min-height: 100vh;
+    padding: 40px 10% 60px;
+    box-sizing: border-box;
+}
 
-            <form method="POST">
+.movie-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 0 20px;
+}
+
+
+/* =========================================================
+   REVIEW SECTION
+========================================================= */
+
+.movie-section {
+    background: white;
+
+    margin-top: 30px;
+
+    padding: 30px;
+
+    border-radius: 16px;
+
+    border: 1px solid #e9e9e9;
+
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+
+    max-width: 800px;
+
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+.section-heading {
+    font-size: 25px;
+
+    font-weight: 700;
+
+    color: #202124;
+
+    margin-bottom: 8px;
+}
+
+.review-subtitle {
+    color: #777;
+
+    font-size: 15px;
+
+    margin-bottom: 28px;
+}
+
+
+/* =========================================================
+   MOVIE NAME
+========================================================= */
+
+.movie-name {
+    color: #e91e63;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.review-form {
+    margin-top: 25px;
+}
+
+.review-form p {
+    margin-bottom: 20px;
+}
+
+.review-form label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #333;
+}
+
+.review-form input,
+.review-form select,
+.review-form textarea {
+    width: 100%;
+
+    padding: 12px 14px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 9px;
+
+    font-size: 15px;
+
+    color: #333;
+
+    background: #fff;
+
+    box-sizing: border-box;
+
+    transition: all 0.2s ease;
+}
+
+.review-form textarea {
+    min-height: 140px;
+
+    resize: vertical;
+}
+
+.review-form input:focus,
+.review-form select:focus,
+.review-form textarea:focus {
+    outline: none;
+
+    border-color: #e91e63;
+
+    box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+}
+
+
+/* =========================================================
+   FORM ERRORS
+========================================================= */
+
+.review-form .errorlist {
+    color: #dc3545;
+
+    font-size: 13px;
+
+    margin: 5px 0 8px;
+
+    padding-left: 18px;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.review-buttons {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 28px;
+}
+
+.submit-review-btn,
+.cancel-review-btn {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 12px 22px;
+
+    border-radius: 8px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+}
+
+
+/* Submit */
+
+.submit-review-btn {
+    border: none;
+
+    background: #e91e63;
+
+    color: white;
+}
+
+.submit-review-btn:hover {
+    background: #d81b60;
+
+    color: white;
+
+    text-decoration: none;
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 6px 15px rgba(233, 30, 99, 0.25);
+}
+
+
+/* Cancel */
+
+.cancel-review-btn {
+    border: 1px solid #ddd;
+
+    background: #f8f9fa;
+
+    color: #444;
+}
+
+.cancel-review-btn:hover {
+    background: #343a40;
+
+    border-color: #343a40;
+
+    color: white;
+
+    text-decoration: none;
+
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .movie-page {
+        padding: 30px 5% 50px;
+    }
+
+    .movie-section {
+        padding: 25px;
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .movie-page {
+        padding: 20px 0 40px;
+    }
+
+    .movie-container {
+        padding: 0 12px;
+    }
+
+    .movie-section {
+        padding: 20px;
+
+        border-radius: 12px;
+
+        margin-top: 20px;
+    }
+
+    .section-heading {
+        font-size: 22px;
+    }
+
+    .review-buttons {
+        flex-direction: column;
+    }
+
+    .submit-review-btn,
+    .cancel-review-btn {
+        width: 100%;
+
+        box-sizing: border-box;
+    }
+}
+
+</style>
+
+
+<div class="movie-page">
+
+    <div class="movie-container">
+
+
+        <!-- =====================================================
+             WRITE REVIEW
+        ====================================================== -->
+
+        <div class="movie-section">
+
+
+            <h1 class="section-heading">
+
+                Write a Review
+
+                <span class="movie-name">
+                    {{ movie.name }}
+                </span>
+
+            </h1>
+
+
+            <p class="review-subtitle">
+                Share your experience and help other movie lovers.
+            </p>
+
+
+            <!-- =================================================
+                 REVIEW FORM
+            ================================================== -->
+
+            <form method="POST" class="review-form">
+
                 {% csrf_token %}
 
                 {{ form.as_p }}
 
-                <button type="submit" class="btn btn-primary">
-                    Submit Review
-                </button>
 
-                <a href="{% url 'movie_list' %}" class="btn btn-secondary">
-                    Cancel
-                </a>
+                <!-- Buttons -->
+
+                <div class="review-buttons">
+
+                    <button
+                        type="submit"
+                        class="submit-review-btn"
+                    >
+                        Submit Review
+                    </button>
+
+
+                    <a
+                        href="{% url 'movie_detail' movie.id %}"
+                        class="cancel-review-btn"
+                    >
+                        Cancel
+                    </a>
+
+                </div>
+
             </form>
 
+
         </div>
+
     </div>
 
 </div>

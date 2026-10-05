@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>BookMySeat Admin Dashboard</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f5f7fb;
+        color: #1f2937;
+    }
+
+    /* =========================
+       MAIN CONTAINER
+    ========================= */
+
+    .dashboard-container {
+        width: 100%;
+        min-height: 100vh;
+        padding: 35px 50px 60px;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        gap: 20px;
+    }
+
+    .dashboard-title h1 {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .dashboard-title p {
+        margin: 7px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    /* =========================
+       FILTER AREA
+    ========================= */
+
+    .filter-box {
+        background: white;
+        padding: 20px 22px;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .filter-box label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .filter-box input {
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #374151;
+        background: #fff;
+        outline: none;
+    }
+
+    .filter-box input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.10);
+    }
+
+    .filter-box button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #4f46e5;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+    .filter-box button:hover {
+        background: #4338ca;
+    }
+
+    .date-info {
+        margin: 0 0 18px;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    .date-info strong {
+        color: #374151;
+    }
+
+    /* =========================
+       EXPORT BUTTON
+    ========================= */
+
+    .export-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 25px;
+    }
+
+    .export-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 17px;
+        background: #111827;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+    .export-button:hover {
+        background: #374151;
+        transform: translateY(-1px);
+    }
+
+    /* =========================
+       STATISTICS
+    ========================= */
+
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 22px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+        transition: 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .stat-card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 3px;
+        background: #4f46e5;
+    }
+
+    .stat-card h3 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .stat-card p {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    /* =========================
+       SECTION HEADERS
+    ========================= */
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+        margin: 0;
+        font-size: 19px;
+        color: #111827;
+    }
+
+    .section-header span {
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    /* =========================
+       CHART GRID
+    ========================= */
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .chart-section {
+        background: white;
+        padding: 24px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+    }
+
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 320px;
+    }
+
+    /* =========================
+       DATA SECTIONS
+    ========================= */
+
+    .section {
+        background: white;
+        padding: 24px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+        margin-bottom: 20px;
+    }
+
+    .section h2 {
+        margin: 0 0 20px;
+        font-size: 19px;
+        color: #111827;
+    }
+
+    /* =========================
+       TABLES
+    ========================= */
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        padding: 13px 14px;
+        text-align: left;
+        background: #f8fafc;
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    td {
+        padding: 14px;
+        text-align: left;
+        border-bottom: 1px solid #f0f2f5;
+        font-size: 14px;
+        color: #374151;
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr:hover {
+        background: #fafbff;
+    }
+
+    /* =========================
+       STATUS BADGES
+    ========================= */
+
+    .status-booked {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-reserved {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #fef3c7;
+        color: #92400e;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* =========================
+       PAYMENT STATUS
+    ========================= */
+
+    .payment-status-success {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .payment-status-cancelled {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #fee2e2;
+        color: #991b1b;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .payment-status-pending {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #fef3c7;
+        color: #92400e;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .payment-status-failed {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #fee2e2;
+        color: #991b1b;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .payment-status-refunded {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #e0e7ff;
+        color: #3730a3;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* =========================
+       OCCUPANCY
+    ========================= */
+
+    .occupancy-bar {
+        width: 150px;
+        height: 7px;
+        background: #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+
+    .occupancy-fill {
+        height: 100%;
+        background: #4f46e5;
+        border-radius: 10px;
+    }
+
+    /* =========================
+       RECENT BOOKINGS / PAYMENTS
+    ========================= */
+
+    .bookings-section,
+    .payments-section {
+        background: white;
+        padding: 24px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+        margin-bottom: 20px;
+        overflow-x: auto;
+    }
+
+    .bookings-section h2,
+    .payments-section h2 {
+        margin: 0 0 20px;
+        font-size: 19px;
+        color: #111827;
+    }
+
+    .bookings-section table,
+    .payments-section table {
+        min-width: 700px;
+    }
+
+    /* =========================
+       EMPTY STATES
+    ========================= */
+
+    .empty-message {
+        text-align: center;
+        color: #9ca3af;
+        padding: 25px;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 1100px) {
+        .dashboard-container {
+            padding: 30px;
+        }
+
+        .dashboard-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 650px) {
+        .dashboard-container {
+            padding: 20px 15px 40px;
+        }
+
+        .dashboard-header {
+            display: block;
+        }
+
+        .dashboard-title h1 {
+            font-size: 24px;
+        }
+
+        .filter-box {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .filter-box input,
+        .filter-box button {
+            width: 100%;
+            margin: 0;
+        }
+
+        .dashboard-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .export-row {
+            justify-content: stretch;
+        }
+
+        .export-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .chart-wrapper {
+            height: 270px;
+        }
+
+        .section,
+        .chart-section,
+        .bookings-section,
+        .payments-section {
+            padding: 18px;
+        }
+
+        th,
+        td {
+            padding: 11px;
+        }
+    }
+</style>
+
+
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+<!-- =========================
+     HEADER
+========================== -->
+
+<div class="dashboard-header">
+    <div class="dashboard-title">
+        <h1>BookMySeat Admin Dashboard</h1>
+        <p>Monitor bookings, revenue, users and business performance.</p>
+    </div>
+</div>
+
+
+<!-- =========================
+     DATE FILTER
+========================== -->
+
+<form method="get" class="filter-box">
+
+    <label>From</label>
+
+    <input
+        type="date"
+        name="start_date"
+        value="{{ start_date|date:'Y-m-d' }}"
+    >
+
+    <label>To</label>
+
+    <input
+        type="date"
+        name="end_date"
+        value="{{ end_date|date:'Y-m-d' }}"
+    >
+
+    <button type="submit">
+        Apply Filter
+    </button>
+
+</form>
+
+
+<p class="date-info">
+    Showing data from
+    <strong>{{ start_date }}</strong>
+    to
+    <strong>{{ end_date }}</strong>
+</p>
+
+
+<!-- =========================
+     EXPORT
+========================== -->
+
+<div class="export-row">
+
+    <a
+        href="{% url 'export_bookings_csv' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+        class="export-button"
+    >
+        ↓ Export Bookings CSV
+    </a>
+
+</div>
+
+
+<!-- =========================
+     STATISTICS
+========================== -->
+
+<div class="dashboard-stats">
+
+    <div class="stat-card">
+        <h3>Total Bookings</h3>
+        <p>{{ total_bookings }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Successful Payments</h3>
+        <p>{{ successful_payments }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Total Revenue</h3>
+        <p>₹{{ total_revenue }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>New Users</h3>
+        <p>{{ total_users }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Daily Revenue</h3>
+        <p>₹{{ daily_revenue }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Weekly Revenue</h3>
+        <p>₹{{ weekly_revenue }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Monthly Revenue</h3>
+        <p>₹{{ monthly_revenue }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Yearly Revenue</h3>
+        <p>₹{{ yearly_revenue }}</p>
+    </div>
+
+</div>
+
+
+<!-- =========================
+     CHARTS
+========================== -->
+
+<div class="charts-grid">
+
+    <div class="chart-section">
+
+        <div class="section-header">
+            <h2>Booking Trends</h2>
+            <span>Selected period</span>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="bookingTrendChart"></canvas>
+        </div>
+
+    </div>
+
+
+    <div class="chart-section">
+
+        <div class="section-header">
+            <h2>Revenue Over Time</h2>
+            <span>Selected period</span>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="revenueTrendChart"></canvas>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     THEATER OCCUPANCY
+========================== -->
+
+<div class="section">
+
+    <h2>Theater Occupancy</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Theater</th>
+                <th>Total Seats</th>
+                <th>Booked Seats</th>
+                <th>Occupancy</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for theater in theater_occupancy %}
+
+            <tr>
+
+                <td>
+                    <strong>{{ theater.name }}</strong>
+                </td>
+
+                <td>
+                    {{ theater.total_seats }}
+                </td>
+
+                <td>
+                    {{ theater.booked_seats }}
+                </td>
+
+                <td>
+
+                    {% if theater.total_seats %}
+
+                        <div class="occupancy-bar">
+                            <div class="occupancy-fill"
+                                style="width: 50%;">
+                            </div>
+                        </div>
+
+                        <strong>
+                            {% widthratio theater.booked_seats theater.total_seats 100 %}%
+                        </strong>
+
+                    {% else %}
+
+                        0%
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="4" class="empty-message">
+                    No theater data available.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     MOST BOOKED MOVIES
+========================== -->
+
+<div class="section">
+
+    <h2>Most Booked Movies</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Movie</th>
+                <th>Booked Seats</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for movie in most_booked_movies %}
+
+            <tr>
+                <td>
+                    <strong>{{ movie.name }}</strong>
+                </td>
+
+                <td>
+                    {{ movie.booked_seats }}
+                </td>
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="2" class="empty-message">
+                    No movie booking data available.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     TOP PERFORMING THEATERS
+========================== -->
+
+<div class="section">
+
+    <h2>Top-Performing Theaters</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Theater</th>
+                <th>Revenue</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for theater in top_performing_theaters %}
+
+            <tr>
+
+                <td>
+                    <strong>{{ theater.name }}</strong>
+                </td>
+
+                <td>
+                    ₹{{ theater.revenue|default:"0.00" }}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="2" class="empty-message">
+                    No theater revenue data available.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     PEAK BOOKING HOURS
+========================== -->
+
+<div class="section">
+
+    <h2>Peak Booking Hours</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Hour</th>
+                <th>Bookings</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for item in peak_booking_hours %}
+
+            <tr>
+
+                <td>
+                    <strong>{{ item.hour }}:00</strong>
+                </td>
+
+                <td>
+                    {{ item.bookings }}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="2" class="empty-message">
+                    No booking data available.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     CANCELLATION STATISTICS
+========================== -->
+
+<div class="section">
+
+    <h2>Cancellation Statistics</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Total Cancellations</th>
+                <th>Cancelled Amount</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+
+                <td>
+                    <strong>
+                        {{ cancellation_stats.total_cancellations|default:"0" }}
+                    </strong>
+                </td>
+
+                <td>
+                    ₹{{ cancellation_stats.cancelled_amount|default:"0.00" }}
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     REFUND STATISTICS
+========================== -->
+
+<div class="section">
+
+    <h2>Refund Statistics</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Total Refunds</th>
+                <th>Refunded Amount</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+
+                <td>
+                    <strong>
+                        {{ refund_stats.total_refunds|default:"0" }}
+                    </strong>
+                </td>
+
+                <td>
+                    ₹{{ refund_stats.refunded_amount|default:"0.00" }}
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     USER GROWTH
+========================== -->
+
+<div class="section">
+
+    <h2>User Growth</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>New Users</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for item in user_growth %}
+
+            <tr>
+
+                <td>
+                    {{ item.date }}
+                </td>
+
+                <td>
+                    {{ item.users }}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="2" class="empty-message">
+                    No user growth data available.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     RECENT BOOKINGS
+========================== -->
+
+<div class="bookings-section">
+
+    <h2>Recent Bookings</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Seat</th>
+                <th>Show</th>
+                <th>Status</th>
+                <th>Booked At</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for booking in recent_bookings %}
+
+            <tr>
+
+                <td>
+                    {{ booking.user.username }}
+                </td>
+
+                <td>
+                    {{ booking.seat.seat_number }}
+                </td>
+
+                <td>
+                    {{ booking.show_schedule.movie.name }}
+                </td>
+
+                <td>
+
+                    <span class="status-{{ booking.status }}">
+                        {{ booking.status|title }}
+                    </span>
+
+                </td>
+
+                <td>
+                    {{ booking.booked_at|date:"d M Y, h:i A" }}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="5" class="empty-message">
+                    No bookings found for this date range.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+<!-- =========================
+     RECENT PAYMENTS
+========================== -->
+
+<div class="payments-section">
+
+    <h2>Recent Payments</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Payment ID</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for payment in recent_payments %}
+
+            <tr>
+
+                <td>
+                    {{ payment.user.username }}
+                </td>
+
+                <td>
+                    <strong>₹{{ payment.amount }}</strong>
+                </td>
+
+                <td>
+
+                    {% if payment.payment_status == "success" %}
+
+                        <span class="payment-status-success">
+                            Success
+                        </span>
+
+                    {% elif payment.payment_status == "cancelled" %}
+
+                        <span class="payment-status-cancelled">
+                            Cancelled
+                        </span>
+
+                    {% elif payment.payment_status == "pending" %}
+
+                        <span class="payment-status-pending">
+                            Pending
+                        </span>
+
+                    {% elif payment.payment_status == "failed" %}
+
+                        <span class="payment-status-failed">
+                            Failed
+                        </span>
+
+                    {% elif payment.payment_status == "refunded" %}
+
+                        <span class="payment-status-refunded">
+                            Refunded
+                        </span>
+
+                    {% else %}
+
+                        {{ payment.payment_status|title }}
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+                    {{ payment.razorpay_payment_id|default:"-" }}
+                </td>
+
+                <td>
+                    {{ payment.created_at|date:"d M Y, h:i A" }}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="5" class="empty-message">
+                    No payments found for this date range.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+</div>
+
+<!-- =========================
+     CHART DATA
+========================= -->
+
+{{ booking_trends|json_script:"booking-trend-data" }}
+{{ revenue_trends|json_script:"revenue-trend-data" }}
+
+<script>
+
+    /* =========================
+       BOOKING TREND CHART
+    ========================== */
+
+    const bookingTrendData = JSON.parse(
+        document.getElementById('booking-trend-data').textContent
+    );
+
+    const bookingDates = bookingTrendData.map(
+        item => item.date
+    );
+
+    const bookingCounts = bookingTrendData.map(
+        item => item.bookings
+    );
+
+    const chartCanvas = document.getElementById(
+        'bookingTrendChart'
+    );
+
+    new Chart(chartCanvas, {
+
+        type: 'line',
+
+        data: {
+            labels: bookingDates,
+
+            datasets: [{
+                label: 'Bookings',
+                data: bookingCounts,
+
+                tension: 0.35,
+
+                borderWidth: 2,
+
+                pointRadius: 4,
+
+                pointHoverRadius: 6,
+
+                fill: false
+            }]
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true,
+
+                    ticks: {
+                        precision: 0
+                    }
+
+                }
+
+            }
+        }
+
+    });
+
+
+    /* =========================
+       REVENUE CHART
+    ========================== */
+
+    const revenueTrendData = JSON.parse(
+        document.getElementById('revenue-trend-data').textContent
+    );
+
+    const revenueDates = revenueTrendData.map(
+        item => item.date
+    );
+
+    const revenueAmounts = revenueTrendData.map(
+        item => Number(item.revenue)
+    );
+
+    const revenueCanvas = document.getElementById(
+        'revenueTrendChart'
+    );
+
+    new Chart(revenueCanvas, {
+
+        type: 'line',
+
+        data: {
+
+            labels: revenueDates,
+
+            datasets: [{
+
+                label: 'Revenue (₹)',
+
+                data: revenueAmounts,
+
+                tension: 0.35,
+
+                borderWidth: 2,
+
+                pointRadius: 4,
+
+                pointHoverRadius: 6,
+
+                fill: false
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: true
+                }
+
+            },
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true
+
+                }
+
+            }
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
