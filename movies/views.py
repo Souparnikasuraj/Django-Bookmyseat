@@ -1,4 +1,5 @@
 import json
+from urllib import request
 from django.shortcuts import redirect, render, get_object_or_404
 from .models import (
     Movie,
@@ -9,17 +10,22 @@ from .models import (
     ReviewReport,
     ShowSchedule,
     Payment,
+    Genre,
+    Language,
 )
 from .forms import ReviewForm, ReviewReportForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
-from django.db.models import Avg
+from django.db.models import Avg, Min
 from django.contrib import messages
 from urllib.parse import urlparse, parse_qs
 from django.utils import timezone
 from datetime import datetime, timedelta, time
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
+from django.core import signing
+from django.core.exceptions import ObjectDoesNotExist
+from .ticket_utils import generate_ticket_pdf
 from django.views.decorators.csrf import csrf_exempt
 import razorpay
 from django.conf import settings
@@ -28,7 +34,8 @@ from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYear
 from django.db.models.functions import ExtractHour
 import csv
-from django.http import HttpResponse
+from django.core.paginator import Paginator
+from .tasks import send_booking_ticket_email
 
 razorpay_client = razorpay.Client(
     auth=(
@@ -40,20 +47,222 @@ razorpay_client = razorpay.Client(
 
 def movie_list(request):
     search_query = request.GET.get('search', '')
+    genre = request.GET.get('genre', '')
+    language = request.GET.get('language', '')
+    rating = request.GET.get('rating', '')
+    show_timing = request.GET.get('show_timing', '')
+    city = request.GET.get('city', '')
+    theater = request.GET.get('theater', '')
+    release_from = request.GET.get('release_from', '')
+    release_to = request.GET.get('release_to', '')
+    movies = Movie.objects.all()
+    sort = request.GET.get('sort', '')
 
+    # Search by movie name
     if search_query:
-        movies = Movie.objects.filter(
+        movies = movies.filter(
             name__icontains=search_query
         )
-    else:
-        movies = Movie.objects.all()
 
+    # Filter by genre
+    if genre:
+        movies = movies.filter(
+            genres__id=genre
+        )
+
+    # Filter by language
+    if language:
+        movies = movies.filter(
+            languages__id=language
+        )
+
+    if rating:
+        movies = movies.filter(
+            rating__gte=rating
+        )
+
+    # Filter by show timing
+    if show_timing:
+
+        if show_timing == 'morning':
+            movies = movies.filter(
+                show_schedules__show_time__hour__gte=6,
+                show_schedules__show_time__hour__lt=12
+            )
+
+        elif show_timing == 'afternoon':
+            movies = movies.filter(
+                show_schedules__show_time__hour__gte=12,
+                show_schedules__show_time__hour__lt=17
+            )
+
+        elif show_timing == 'evening':
+            movies = movies.filter(
+                show_schedules__show_time__hour__gte=17,
+                show_schedules__show_time__hour__lt=21
+            )
+
+        elif show_timing == 'night':
+            movies = movies.filter(
+                show_schedules__show_time__hour__gte=21
+            )
+
+    # Filter by city
+    if city:
+        movies = movies.filter(
+            show_schedules__theater__location__iexact=city
+        )
+    # Filter by theater
+    if theater:
+        movies = movies.filter(
+            show_schedules__theater__id=theater
+        )
+
+    # Filter by release date
+    if release_from:
+        movies = movies.filter(
+            release_date__gte=release_from
+        )
+
+    if release_to:
+        movies = movies.filter(
+            release_date__lte=release_to
+        )
+
+    # Sorting
+
+    if sort == 'newest':
+        movies = movies.order_by('-release_date', 'id')
+
+    elif sort == 'rating':
+        movies = movies.order_by('-rating', 'id')
+
+    elif sort == 'price':
+        movies = movies.annotate(
+            min_ticket_price=Min('show_schedules__ticket_price')
+        ).order_by('min_ticket_price', 'id')
+
+    elif sort == 'popular':
+        movies = movies.annotate(
+            booking_count=Count(
+                'show_schedules__bookings',
+                filter=Q(
+                    show_schedules__bookings__status='booked'
+                ),
+                distinct=True
+            )
+        ).order_by('-booking_count', 'id')
+
+    
+    movies = movies.distinct()
+
+    # Count all matching movies before pagination
+    matching_movie_count = movies.count()
+
+    # Pagination: display 10 movies per page
+    paginator = Paginator(movies, 10)
+
+    page_number = request.GET.get('page')
+
+    movies = paginator.get_page(page_number)
+
+    genres = Genre.objects.all().order_by('name')
+    languages = Language.objects.all().order_by('name')
+    theaters = Theater.objects.all().order_by('name')
+    cities = Theater.objects.values_list(
+        'location',
+        flat=True
+    ).distinct().order_by('location')
+    
+    # ==========================================
+    # RECOMMENDED FOR YOU
+    # ==========================================
+
+    booked_movie_ids = Movie.objects.none().values_list('id', flat=True)
+
+    if request.user.is_authenticated:
+
+        booked_movie_ids = Movie.objects.filter(
+            show_schedules__bookings__user=request.user,
+            show_schedules__bookings__status='booked'
+        ).values_list('id', flat=True).distinct()
+
+        # Find genres and languages from previously booked movies
+        preferred_genres = Genre.objects.filter(
+            movies__show_schedules__bookings__user=request.user,
+            movies__show_schedules__bookings__status='booked'
+        ).distinct()
+
+        preferred_languages = Language.objects.filter(
+            movies__show_schedules__bookings__user=request.user,
+            movies__show_schedules__bookings__status='booked'
+        ).distinct()
+
+        # Recommend movies with matching genres or languages
+        recommended_movies = Movie.objects.exclude(
+            id__in=booked_movie_ids
+        ).filter(
+            Q(genres__in=preferred_genres) |
+            Q(languages__in=preferred_languages)
+        ).annotate(
+            booking_count=Count(
+                'show_schedules__bookings',
+                filter=Q(
+                    show_schedules__bookings__status='booked'
+                ),
+                distinct=True
+            )
+        ).order_by(
+            '-booking_count',
+            '-rating',
+            'name'
+        ).distinct()[:5]
+
+    else:
+        recommended_movies = Movie.objects.all().annotate(
+            booking_count=Count(
+                'show_schedules__bookings',
+                filter=Q(
+                    show_schedules__bookings__status='booked'
+                ),
+                distinct=True
+            )
+        ).order_by(
+            '-booking_count',
+            '-rating',
+            'name'
+        )[:5]
+
+    # Fall back to popular movies if personalized results are empty
+    if not recommended_movies.exists():
+        recommended_movies = Movie.objects.exclude(
+            id__in=booked_movie_ids
+        ).annotate(
+            booking_count=Count(
+                'show_schedules__bookings',
+                filter=Q(
+                    show_schedules__bookings__status='booked'
+                ),
+                distinct=True
+            )
+        ).order_by(
+            '-booking_count',
+            '-rating',
+            'name'
+        )[:5]
     return render(
         request,
         'movies/movie_list.html',
-        {'movies': movies}
+        {
+            'movies': movies,
+            'genres': genres,
+            'languages': languages,
+            'theaters': theaters,
+            'cities': cities,
+            'matching_movie_count': matching_movie_count,
+            'recommended_movies': recommended_movies,
+        }
     )
-
 
 def theater_list(request, movie_id):
     movie = get_object_or_404(Movie, id=movie_id)
@@ -991,17 +1200,30 @@ def verify_payment(request, show_id):
         payment.payment_status = 'success'
         payment.save()
 
-        reservations = Booking.objects.filter(
-            user=request.user,
-            show_schedule_id=show_id,
-            status='reserved',
-            reserved_until__gt=timezone.now()
+        reservations = list(
+            Booking.objects.filter(
+                user=request.user,
+                show_schedule_id=show_id,
+                status='reserved',
+                reserved_until__gt=timezone.now()
+            ).values_list('id', flat=True)
         )
 
-        reservations.update(
+        Booking.objects.filter(
+            id__in=reservations
+        ).update(
             status='booked',
             reserved_until=None
         )
+
+        for booking_id in reservations:
+            transaction.on_commit(
+                lambda booking_id=booking_id: send_booking_ticket_email.delay(
+                    booking_id
+                ),
+                robust=True
+            )
+
 
         return JsonResponse({
             'success': True,
@@ -1017,6 +1239,7 @@ def verify_payment(request, show_id):
             'success': False,
             'message': 'Payment verification failed.'
         }, status=400)
+        
 @csrf_exempt
 def razorpay_webhook(request):
 
@@ -1065,20 +1288,36 @@ def razorpay_webhook(request):
                         'message': 'Payment already processed.'
                     })
 
+                
                 with transaction.atomic():
 
                     payment.payment_status = 'success'
                     payment.razorpay_payment_id = razorpay_payment_id
                     payment.save()
 
+                    booking_ids = list(
+                        Booking.objects.filter(
+                            user=payment.user,
+                            show_schedule=payment.booking.show_schedule,
+                            status='reserved'
+                        ).values_list('id', flat=True)
+                    )
+
                     Booking.objects.filter(
-                        user=payment.user,
-                        show_schedule=payment.booking.show_schedule,
-                        status='reserved'
+                        id__in=booking_ids
                     ).update(
                         status='booked',
                         reserved_until=None
                     )
+
+                    for booking_id in booking_ids:
+                        transaction.on_commit(
+                            lambda booking_id=booking_id: send_booking_ticket_email.delay(
+                                booking_id
+                            ),
+                            robust=True
+                        )
+
 
                 print("Payment marked as successful.")
                 print("Bookings confirmed.")
@@ -1311,18 +1550,30 @@ def admin_dashboard(request):
     for item in booking_trends:
         item['date'] = item['date'].strftime('%Y-%m-%d')
 
-    theater_occupancy = Theater.objects.annotate(
-        total_seats=Count('screens__seats', distinct=True),
-        booked_seats=Count(
-            'show_schedules__bookings',
-            filter=Q(
-                show_schedules__bookings__status='booked',
-                show_schedules__bookings__booked_at__gte=start_datetime,
-                show_schedules__bookings__booked_at__lt=end_datetime
-            ),
-            distinct=True
-        )
+    
+    theater_occupancy = Theater.objects.prefetch_related(
+        'show_schedules__screen__seats',
+        'show_schedules__bookings'
     )
+
+    for theater in theater_occupancy:
+        total_seats = 0
+        booked_seats = 0
+
+        relevant_shows = theater.show_schedules.filter(
+            show_time__gte=start_datetime,
+            show_time__lt=end_datetime
+        )
+
+        for show in relevant_shows:
+            total_seats += show.screen.seats.count()
+            booked_seats += show.bookings.filter(
+                status='booked'
+            ).count()
+
+        theater.total_seats = total_seats
+        theater.booked_seats = booked_seats
+
     most_booked_movies = Movie.objects.annotate(
         booked_seats=Count(
             'show_schedules__bookings',
@@ -1526,3 +1777,92 @@ def export_bookings_csv(request):
         ])
 
     return response
+
+
+@login_required(login_url='/login/')
+def download_ticket(request, booking_id):
+    """Download a PDF ticket for the current user's paid booking."""
+
+    booking = get_object_or_404(
+        Booking.objects.select_related(
+            'user',
+            'seat',
+            'show_schedule__movie',
+            'show_schedule__theater',
+            'show_schedule__screen',
+        ),
+        pk=booking_id,
+        user=request.user,
+        status='booked',
+    )
+
+    if not booking.payments.filter(payment_status='success').exists():
+        raise Http404("No successful payment found for this booking.")
+
+    pdf_bytes = generate_ticket_pdf(booking)
+
+    response = HttpResponse(
+        pdf_bytes,
+        content_type='application/pdf',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="BookMySeat_Ticket_{booking.pk}.pdf"'
+    )
+    return response
+
+
+def verify_ticket(request, token):
+    """Verify a ticket using its signed QR-code token."""
+
+    try:
+        ticket_data = signing.loads(
+            token,
+            salt='bookmyseat.ticket',
+            max_age=60 * 60 * 24 * 365,
+        )
+    except signing.BadSignature:
+        return HttpResponse(
+            "Invalid or expired ticket QR code.",
+            status=400,
+            content_type='text/plain',
+        )
+
+    booking = get_object_or_404(
+        Booking.objects.select_related(
+            'user',
+            'seat',
+            'show_schedule__movie',
+            'show_schedule__theater',
+            'show_schedule__screen',
+        ),
+        pk=ticket_data.get('booking_id'),
+        status='booked',
+    )
+
+    payment = Payment.objects.filter(
+        pk=ticket_data.get('payment_id'),
+        user=booking.user,
+        booking__show_schedule=booking.show_schedule,
+        payment_status='success',
+    ).first()
+
+    if payment is None:
+        return HttpResponse(
+            "Ticket payment could not be verified.",
+            status=400,
+            content_type='text/plain',
+        )
+
+    return HttpResponse(
+        (
+            "VALID BOOKMYSEAT TICKET\n"
+            f"Booking ID: {booking.pk}\n"
+            f"Movie: {booking.show_schedule.movie.name}\n"
+            f"Theater: {booking.show_schedule.theater.name}\n"
+            f"Screen: {booking.show_schedule.screen.name}\n"
+            f"Seat: {booking.seat.seat_number}\n"
+            f"Show time: {timezone.localtime(booking.show_schedule.show_time)}\n"
+            "Payment status: SUCCESS"
+        ),
+        content_type='text/plain',
+    )

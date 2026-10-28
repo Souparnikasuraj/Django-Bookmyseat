@@ -38,11 +38,10 @@ def register(request):
             password=form.cleaned_data.get('password1')
             user=authenticate(username=username,password=password)
             login(request,user)
-            return redirect('profile')
+            return redirect('/')
     else:
         form=UserRegisterForm()
     return render(request,'users/register.html',{'form':form})
-
 
 def login_view(request):
     if request.method == 'POST':

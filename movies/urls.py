@@ -68,4 +68,14 @@ urlpatterns=[
     ),
 
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+        path(
+        'booking/<int:booking_id>/ticket/',
+        views.download_ticket,
+        name='download_ticket'
+    ),
+    path(
+        'verify-ticket/<str:token>/',
+        views.verify_ticket,
+        name='verify_ticket'
+    ),
 ]

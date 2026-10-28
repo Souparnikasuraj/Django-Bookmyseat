@@ -8,6 +8,7 @@ cloudinary==1.45.0
 django-cloudinary-storage==0.3.0
 python-dotenv
 razorpay==2.0.1
-
-
-
+celery==5.6.3
+reportlab==5.0.1
+qrcode==8.2
+redis==7.0.1

@@ -1,89 +1,622 @@
 {% extends "users/basic.html" %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="modal-title mb-0" id="loginModalLabel">
-                        <i class="fas fa-sign-in-alt me-2"></i> Log In
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{% url 'login' %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                                {{ form.username }}
-                            </div>
-                        </div>
 
-                        <!-- Password Input -->
-                        <div class="mb-3">
-                            <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-lock"></i>
-                                </span>
-                                {{ form.password }}
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye" id="toggleIcon"></i>
-                                </button>
-                            </div>
-                        </div>
+<div class="login-page">
+    <div class="login-wrapper">
 
-                        <!-- Submit Button -->
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-sign-in-alt me-2"></i> Login
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-footer text-center">
-                    <a href="{% url 'password_reset' %}" class="text-decoration-none">Forgot Password?</a>
-                    <hr>
-                    <p class="mb-0">Don't have an account? <a href="{% url 'register' %}" class="text-decoration-none">Sign Up</a></p>
-                </div>
+        <!-- Branding -->
+        <div class="login-brand">
+            <div class="brand-icon">
+                <i class="fas fa-ticket-alt"></i>
             </div>
+            <h1>BookMy<span>Seat</span></h1>
         </div>
+
+        <!-- Login Card -->
+        <div class="login-card">
+
+            <div class="login-heading">
+                <div class="heading-icon">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h2>Login</h2>
+            </div>
+
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Username -->
+                <div class="form-group-custom">
+                    <label for="{{ form.username.id_for_label }}">
+                        Username
+                    </label>
+
+                    <div class="custom-input">
+                        <i class="fas fa-user input-icon"></i>
+                        {{ form.username }}
+                    </div>
+
+                    {% if form.username.errors %}
+                        <small class="text-danger">
+                            {{ form.username.errors|striptags }}
+                        </small>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="form-group-custom">
+                    <label for="{{ form.password.id_for_label }}">
+                        Password
+                    </label>
+
+                    <div class="custom-input">
+                        <i class="fas fa-lock input-icon"></i>
+                        {{ form.password }}
+
+                        <button
+                            class="password-toggle"
+                            type="button"
+                            id="togglePassword"
+                            aria-label="Show password"
+                            aria-pressed="false">
+                            <i class="fas fa-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+
+                    {% if form.password.errors %}
+                        <small class="text-danger">
+                            {{ form.password.errors|striptags }}
+                        </small>
+                    {% endif %}
+                </div>
+
+                <!-- Forgot Password -->
+                <div class="forgot-password">
+                    <a href="{% url 'password_reset' %}">
+                        Forgot Password?
+                    </a>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="login-btn">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Registration -->
+            <div class="signup-section">
+                <p>
+                    Don't have an account?
+                    <a href="{% url 'register' %}">Create Account</a>
+                </p>
+            </div>
+
+        </div>
+
+        <div class="login-footer">
+            <i class="fas fa-film"></i>
+            Your seat. Your movie. Your experience.
+        </div>
+
     </div>
 </div>
 
 <style>
-    .card {
-        border-radius: 1rem;
+    
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
     }
-    .card-header {
-        border-top-left-radius: 1rem;
-        border-top-right-radius: 1rem;
+
+    .login-page,
+    .login-page *,
+    .login-page *::before,
+    .login-page *::after {
+        box-sizing: border-box;
     }
-    .input-group-text {
-        background-color: #f8f9fa;
+
+    .login-page {
+        /* Full browser width, even inside Bootstrap container */
+        width: 100vw !important;
+        max-width: 100vw !important;
+        position: relative;
+        left: auto;
+        margin-left: calc(50% - 50vw) !important;
+
+        /* Let the login section take only the space it needs. */
+        min-height: 0;
+        height: auto;
+        padding: 14px 16px 20px;
+        margin-bottom: 0 !important;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background:
+            radial-gradient(
+                circle at 12% 20%,
+                rgba(100, 85, 230, 0.13),
+                transparent 38%
+            ),
+            radial-gradient(
+                circle at 90% 80%,
+                rgba(255, 100, 120, 0.09),
+                transparent 35%
+            ),
+            #f4f5fc;
     }
-    .form-control:focus {
+
+    /* Main wrapper */
+
+    .login-wrapper {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    /* Branding */
+
+    .login-brand {
+        text-align: center;
+        margin-bottom: 14px;
+    }
+
+    .brand-icon {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 7px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: linear-gradient(135deg, #5145cd, #7868ff);
+        color: white;
+        font-size: 20px;
+
+        border-radius: 13px;
+        box-shadow: 0 6px 15px rgba(81, 69, 205, 0.20);
+        transform: rotate(-5deg);
+    }
+
+    .login-brand h1 {
+        font-size: 27px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        color: #22223b;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .login-brand h1 span {
+        color: #6254df;
+    }
+
+    .login-brand p {
+        color: #85869e;
+        font-size: 12px;
+        margin: 4px 0 0;
+    }
+
+    /* Login card */
+
+    .login-card {
+        width: 100%;
+        background: #fff;
+        padding: 22px 25px 18px;
+
+        border: 1px solid #e9e9f4;
+        border-radius: 18px;
+
+        box-shadow: 0 12px 35px rgba(36, 35, 80, 0.09);
+    }
+
+    /* Heading */
+
+    .login-heading {
+        text-align: center;
+        margin-bottom: 19px;
+    }
+
+    .heading-icon {
+        color: #6254df;
+        font-size: 29px;
+        margin-bottom: 4px;
+    }
+
+    .login-heading h2 {
+        font-size: 22px;
+        font-weight: 750;
+        letter-spacing: -0.5px;
+        color: #25253d;
+        margin: 0 0 5px;
+    }
+
+    .login-heading p {
+        font-size: 12px;
+        color: #89899c;
+        margin: 0;
+    }
+
+    /* Input fields */
+
+    .form-group-custom {
+        margin-bottom: 14px;
+    }
+
+    .form-group-custom label {
+        display: block;
+        color: #37374e;
+        font-size: 13px;
+        font-weight: 650;
+        margin-bottom: 5px;
+    }
+
+    .custom-input {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 43px;
+        min-width: 0;
+
+        border: 1px solid #e2e3ef;
+        border-radius: 9px;
+        background: #fafaff;
+        overflow: hidden;
+
+        transition: border-color 0.2s, box-shadow 0.2s,
+                    background 0.2s;
+    }
+
+    .custom-input:focus-within {
+        border-color: #7868ff;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(98, 84, 223, 0.10);
+    }
+
+    .input-icon {
+        flex-shrink: 0;
+        width: 38px;
+        text-align: center;
+        color: #9292aa;
+        font-size: 13px;
+    }
+
+    .custom-input input,
+    .custom-input .form-control {
+        flex: 1;
+        width: 0;
+        min-width: 0;
+        height: 100%;
+        padding: 0 8px 0 0;
+        margin: 0;
+
+        border: none !important;
+        outline: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+
+        color: #292940;
+        font-size: 13px;
+    }
+
+    .custom-input input:focus {
+        border: none;
+        outline: none;
         box-shadow: none;
-        border-color: #80bdff;
     }
+
+    /* Password visibility */
+
+    .password-toggle {
+        flex-shrink: 0;
+        width: 38px;
+        height: 100%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border: none;
+        background: transparent;
+        color: #8989a1;
+        cursor: pointer;
+    }
+
+    .password-toggle:hover {
+        color: #6254df;
+    }
+
+    .password-toggle:focus-visible {
+        outline: 2px solid #6254df;
+        outline-offset: -4px;
+        border-radius: 8px;
+    }
+
+    /* Forgot password */
+
+    .forgot-password {
+        text-align: right;
+        margin-top: -4px;
+        margin-bottom: 15px;
+    }
+
+    .forgot-password a {
+        color: #6254df;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .forgot-password a:hover {
+        color: #4034b4;
+        text-decoration: underline;
+    }
+
+    /* Sign in button */
+
+    .login-btn {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 16px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+
+        border: none;
+        border-radius: 9px;
+
+        background: linear-gradient(110deg, #5145cd, #7665f6);
+        color: #fff;
+
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+
+        box-shadow: 0 5px 13px rgba(81, 69, 205, 0.20);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .login-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(81, 69, 205, 0.27);
+        color: #fff;
+    }
+
+    .login-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Registration */
+
+    .signup-section {
+        text-align: center;
+        border-top: 1px solid #eeeef5;
+        margin-top: 16px;
+        padding-top: 13px;
+    }
+
+    .signup-section p {
+        font-size: 12px;
+        color: #85859a;
+        margin: 0;
+    }
+
+    .signup-section a {
+        color: #6254df;
+        font-weight: 700;
+        text-decoration: none;
+        margin-left: 3px;
+    }
+
+    .signup-section a:hover {
+        text-decoration: underline;
+    }
+
+    /* Footer */
+
+    .login-footer {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 11px;
+        color: #9696a8;
+    }
+
+    .login-footer i {
+        color: #6254df;
+        margin-right: 4px;
+    }
+
+    /* Short desktop screens */
+
+    @media (max-height: 750px) {
+        .login-page {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .login-brand {
+            margin-bottom: 9px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 17px;
+            margin-bottom: 5px;
+        }
+
+        .login-brand h1 {
+            font-size: 24px;
+        }
+
+        .login-brand p {
+            margin-top: 2px;
+        }
+
+        .login-card {
+            padding: 16px 22px 13px;
+        }
+
+        .login-heading {
+            margin-bottom: 12px;
+        }
+
+        .heading-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        .login-heading h2 {
+            font-size: 20px;
+            margin-bottom: 3px;
+        }
+
+        .form-group-custom {
+            margin-bottom: 10px;
+        }
+
+        .custom-input {
+            height: 39px;
+        }
+
+        .forgot-password {
+            margin-bottom: 11px;
+        }
+
+        .login-btn {
+            min-height: 40px;
+        }
+
+        .signup-section {
+            margin-top: 12px;
+            padding-top: 10px;
+        }
+
+        .login-footer {
+            margin-top: 8px;
+        }
+    }
+
+    /* Mobile screens */
+
+    @media (max-width: 480px) {
+        .login-page {
+            width: 100%;
+            left: auto;
+            margin-left: 0;
+            min-height: 0;
+            height: auto;
+            padding: 16px 14px 20px;
+        }
+
+        .login-wrapper {
+            max-width: 360px;
+        }
+
+        .login-card {
+            padding: 22px 19px 17px;
+            border-radius: 15px;
+        }
+
+        .login-brand h1 {
+            font-size: 26px;
+        }
+
+        .login-heading h2 {
+            font-size: 21px;
+        }
+    }
+
+    /* Remove inherited spacing around this page and its footer. */
+    body:has(.login-page) {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body:has(.login-page) main,
+    body:has(.login-page) .main-content,
+    body:has(.login-page) .content-wrapper,
+    body:has(.login-page) .container,
+    body:has(.login-page) .container-fluid {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    body:has(.login-page) footer {
+        margin-top: 0 !important;
+    }
+
+    /* Very short screens: allow scrolling only when necessary */
+
+    @media (max-height: 560px) {
+        .login-page {
+            align-items: flex-start;
+        }
+    }
+
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const togglePassword = document.getElementById('togglePassword');
-        const passwordField = document.getElementById('{{ form.password.id_for_label }}');
-        const toggleIcon = document.getElementById('toggleIcon');
+    document.addEventListener('DOMContentLoaded', function () {
+        const togglePassword =
+            document.getElementById('togglePassword');
 
-        togglePassword.addEventListener('click', function() {
-            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordField.setAttribute('type', type);
-            toggleIcon.classList.toggle('fa-eye');
-            toggleIcon.classList.toggle('fa-eye-slash');
-        });
+        const passwordField = document.getElementById(
+            '{{ form.password.id_for_label|escapejs }}'
+        );
+
+        const toggleIcon =
+            document.getElementById('toggleIcon');
+
+        if (togglePassword && passwordField && toggleIcon) {
+            togglePassword.addEventListener('click', function () {
+                const isPassword =
+                    passwordField.type === 'password';
+
+                passwordField.type = isPassword ? 'text' : 'password';
+
+                toggleIcon.classList.toggle('fa-eye', !isPassword);
+                toggleIcon.classList.toggle(
+                    'fa-eye-slash',
+                    isPassword
+                );
+
+                togglePassword.setAttribute(
+                    'aria-label',
+                    isPassword ? 'Hide password' : 'Show password'
+                );
+
+                togglePassword.setAttribute(
+                    'aria-pressed',
+                    String(isPassword)
+                );
+            });
+        }
     });
 </script>
 

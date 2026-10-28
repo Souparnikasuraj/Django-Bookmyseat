@@ -1,5 +1,5 @@
-{% extends "users/basic.html" %}
 
+{% extends "users/basic.html" %}
 {% block content %}
 
 <style>
@@ -25,7 +25,6 @@
     box-sizing: border-box;
 }
 
-
 /* =========================================================
    PAGE HEADER
 ========================================================= */
@@ -46,7 +45,6 @@
     font-size: 14px;
     margin: 0;
 }
-
 
 /* =========================================================
    SEARCH BAR
@@ -79,49 +77,31 @@
 .search-input {
     width: 100%;
     height: 46px;
-
     border: 1px solid #ddd;
     border-radius: 7px;
-
     padding: 0 15px 0 43px;
-
     font-size: 14px;
-
     background: white;
-
     outline: none;
-
     box-sizing: border-box;
-
     transition: 0.2s;
 }
 
 .search-input:focus {
     border-color: #e91e63;
-
-    box-shadow:
-        0 0 0 3px rgba(233, 30, 99, 0.08);
+    box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.08);
 }
 
 .search-button {
     height: 46px;
-
     padding: 0 22px;
-
     border: none;
-
     border-radius: 7px;
-
     background: #e91e63;
-
     color: white;
-
     font-size: 14px;
-
     font-weight: 600;
-
     cursor: pointer;
-
     transition: 0.2s;
 }
 
@@ -129,6 +109,158 @@
     background: #d81b60;
 }
 
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.filters-wrapper {
+    max-width: 1100px;
+    margin: 0 auto 35px;
+}
+
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 12px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+}
+
+.filter-select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    background: white;
+    color: #333;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.filter-select:focus {
+    border-color: #e91e63;
+    box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.08);
+}
+
+.filter-button {
+    height: 44px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 7px;
+    background: #333;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filter-button:hover {
+    background: #222;
+}
+
+.clear-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    background: white;
+    color: #666;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.clear-filter:hover {
+    color: #e91e63;
+    border-color: #e91e63;
+}
+
+/* FILTER RESPONSIVE */
+
+@media (max-width: 800px) {
+    .filters-form {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .filters-form {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-button,
+    .clear-filter {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   MATCHING MOVIE COUNT
+========================================================= */
+
+.movie-count {
+    margin-bottom: 20px;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* =========================================================
+   PAGINATION
+========================================================= */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+.pagination a {
+    display: inline-block;
+    padding: 10px 18px;
+    border: 1px solid #e91e63;
+    border-radius: 7px;
+    color: #e91e63;
+    background: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.pagination a:hover {
+    background: #e91e63;
+    color: white;
+}
+
+.page-info {
+    color: #666;
+    font-size: 14px;
+}
+
+.pagination a:focus-visible {
+    outline: 2px solid #e91e63;
+    outline-offset: 3px;
+}
 
 /* =========================================================
    MOVIE GRID
@@ -141,7 +273,6 @@
     row-gap: 38px;
 }
 
-
 /* =========================================================
    MOVIE ITEM
 ========================================================= */
@@ -150,44 +281,31 @@
     min-width: 0;
 }
 
-
 /* =========================================================
    POSTER
 ========================================================= */
 
 .movie-poster-wrapper {
     position: relative;
-
     width: 100%;
-
     aspect-ratio: 2 / 3;
-
     overflow: hidden;
-
     border-radius: 10px;
-
     background: #e9e9e9;
-
     cursor: pointer;
 }
 
 .movie-poster {
     width: 100%;
     height: 100%;
-
     object-fit: cover;
-
     display: block;
-
-    transition:
-        transform 0.3s ease,
-        filter 0.3s ease;
+    transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 .movie-poster-wrapper:hover .movie-poster {
     transform: scale(1.035);
 }
-
 
 /* =========================================================
    RATING OVER POSTER
@@ -195,31 +313,21 @@
 
 .poster-rating {
     position: absolute;
-
     bottom: 9px;
     left: 9px;
-
     background: rgba(255, 255, 255, 0.95);
-
     padding: 5px 8px;
-
     border-radius: 5px;
-
     font-size: 12px;
-
     color: #444;
-
     font-weight: 600;
-
     box-shadow: 0 2px 7px rgba(0, 0, 0, 0.15);
 }
 
 .poster-rating i {
     color: #ffc107;
-
     margin-right: 3px;
 }
-
 
 /* =========================================================
    MOVIE NAME
@@ -227,22 +335,14 @@
 
 .movie-name {
     margin: 10px 3px 5px;
-
     font-size: 16px;
-
     font-weight: 600;
-
     color: #222;
-
     line-height: 1.3;
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
 }
-
 
 /* =========================================================
    MOVIE META
@@ -250,29 +350,21 @@
 
 .movie-meta {
     display: flex;
-
     align-items: center;
-
     gap: 7px;
-
     margin: 0 3px;
-
     color: #777;
-
     font-size: 13px;
-
     line-height: 1.4;
 }
 
 .movie-rating {
     color: #555;
-
     white-space: nowrap;
 }
 
 .movie-rating i {
     color: #ffc107;
-
     margin-right: 3px;
 }
 
@@ -282,12 +374,9 @@
 
 .movie-genres {
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
 }
-
 
 /* =========================================================
    VIEW DETAILS
@@ -295,36 +384,25 @@
 
 .movie-details {
     display: inline-block;
-
     margin: 9px 3px 0;
-
     font-size: 13px;
-
     font-weight: 600;
-
     color: #e91e63;
-
     text-decoration: none;
-
     opacity: 0;
-
     transform: translateY(3px);
-
     transition: all 0.2s ease;
 }
 
 .movie-item:hover .movie-details {
     opacity: 1;
-
     transform: translateY(0);
 }
 
 .movie-details:hover {
     color: #c2185b;
-
     text-decoration: none;
 }
-
 
 /* =========================================================
    EMPTY STATE
@@ -332,42 +410,57 @@
 
 .empty-state {
     background: white;
-
     border: 1px solid #e5e5e5;
-
     border-radius: 12px;
-
     text-align: center;
-
     padding: 60px 20px;
-
     margin-top: 20px;
 }
 
 .empty-icon {
     font-size: 42px;
-
     margin-bottom: 12px;
 }
 
 .empty-title {
     font-size: 20px;
-
     font-weight: 600;
-
     color: #333;
-
     margin-bottom: 5px;
 }
 
 .empty-text {
     color: #888;
-
     font-size: 14px;
-
     margin: 0;
 }
 
+.recommendations-section {
+    margin-top: 55px;
+    padding-top: 30px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.recommendations-title {
+    margin-bottom: 8px;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.recommendations-subtitle {
+    margin-bottom: 24px;
+    color: #777;
+    font-size: 14px;
+}
+
+.recommendations-section .movie-item a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.recommendations-section .movie-item a:hover .movie-name {
+    color: #e50914;
+}
 
 /* =========================================================
    RESPONSIVE
@@ -376,51 +469,36 @@
 /* Large desktop */
 
 @media (min-width: 1200px) {
-
     .movie-grid {
-        grid-template-columns:
-            repeat(5, 1fr);
+        grid-template-columns: repeat(5, 1fr);
     }
-
 }
-
 
 /* Smaller desktop */
 
 @media (max-width: 1100px) {
-
     .movie-grid {
-        grid-template-columns:
-            repeat(4, 1fr);
-
+        grid-template-columns: repeat(4, 1fr);
         gap: 25px;
     }
-
 }
-
 
 /* Tablet */
 
 @media (max-width: 800px) {
-
     .movie-grid {
-        grid-template-columns:
-            repeat(3, 1fr);
-
+        grid-template-columns: repeat(3, 1fr);
         gap: 22px;
     }
 
     .movies-title {
         font-size: 29px;
     }
-
 }
-
 
 /* Mobile */
 
 @media (max-width: 600px) {
-
     .movies-page {
         padding: 25px 0 45px;
     }
@@ -450,41 +528,32 @@
     }
 
     .movie-grid {
-        grid-template-columns:
-            repeat(2, 1fr);
-
+        grid-template-columns: repeat(2, 1fr);
         gap: 25px 14px;
     }
 
     .movie-name {
         font-size: 14px;
-
         margin-top: 8px;
     }
 
     .movie-meta {
         font-size: 11px;
-
         gap: 5px;
     }
 
     .movie-details {
         opacity: 1;
-
         font-size: 12px;
-
         transform: none;
     }
-
 }
-
 
 /* =========================================================
    VERY SMALL MOBILE
 ========================================================= */
 
 @media (max-width: 360px) {
-
     .movie-grid {
         gap: 20px 10px;
     }
@@ -496,11 +565,9 @@
     .movie-meta {
         font-size: 10px;
     }
-
 }
 
 </style>
-
 
 <!-- =========================================================
      MOVIES PAGE
@@ -510,77 +577,312 @@
 
     <div class="movies-container">
 
-
-        <!-- =====================================================
-             HEADER
-        ====================================================== -->
+        <!-- HEADER -->
 
         <div class="movies-header">
-
-            <h1 class="movies-title">
-                Movies
-            </h1>
+            <h1 class="movies-title">Movies</h1>
 
             <p class="movies-subtitle">
                 Explore movies and find your next movie experience.
             </p>
-
         </div>
 
-
         <!-- =====================================================
-             SEARCH
+             SHARED SEARCH AND FILTER FORM
+             Both Search and Apply Filters submit all selections.
         ====================================================== -->
 
-        <div class="search-wrapper">
+        <form method="GET" action="{% url 'movie_list' %}" id="movieDiscoveryForm">
 
-            <form
-                method="GET"
-                action="{% url 'movie_list' %}"
-                class="search-form"
-            >
+            <!-- SEARCH -->
 
-                <div class="search-input-wrapper">
+            <div class="search-wrapper">
 
-                    <i class="fas fa-search search-icon"></i>
+                <div class="search-form">
 
-                    <input
-                        type="text"
-                        name="search"
-                        class="search-input"
-                        placeholder="Search for movies..."
-                        value="{{ request.GET.search|default_if_none:'' }}"
-                        aria-label="Search for movies"
-                    >
+                    <div class="search-input-wrapper">
+
+                        <i class="fas fa-search search-icon"></i>
+
+                        <input
+                            type="text"
+                            name="search"
+                            class="search-input"
+                            placeholder="Search for movies..."
+                            value="{{ request.GET.search|default_if_none:'' }}"
+                            aria-label="Search for movies"
+                        >
+
+                    </div>
+
+                    <button type="submit" class="search-button">
+                        Search
+                    </button>
 
                 </div>
 
+            </div>
 
-                <button
-                    type="submit"
-                    class="search-button"
-                >
-                    Search
-                </button>
+            <!-- FILTERS -->
 
-            </form>
+            <div class="filters-wrapper">
 
-        </div>
+                <div class="filters-form">
 
+                    <!-- Genre -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Genre</label>
+
+                        <select name="genre" class="filter-select">
+
+                            <option value="">All Genres</option>
+
+                            {% for genre in genres %}
+                                <option
+                                    value="{{ genre.id }}"
+                                    {% if request.GET.genre == genre.id|stringformat:"s" %}selected{% endif %}
+                                >
+                                    {{ genre.name }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- Language -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Language</label>
+
+                        <select name="language" class="filter-select">
+
+                            <option value="">All Languages</option>
+
+                            {% for language in languages %}
+                                <option
+                                    value="{{ language.id }}"
+                                    {% if request.GET.language == language.id|stringformat:"s" %}selected{% endif %}
+                                >
+                                    {{ language.name }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- Rating -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Rating</label>
+
+                        <select name="rating" class="filter-select">
+
+                            <option value="">All Ratings</option>
+
+                            <option value="4" {% if request.GET.rating == "4" %}selected{% endif %}>
+                                4+ ⭐
+                            </option>
+
+                            <option value="3" {% if request.GET.rating == "3" %}selected{% endif %}>
+                                3+ ⭐
+                            </option>
+
+                            <option value="2" {% if request.GET.rating == "2" %}selected{% endif %}>
+                                2+ ⭐
+                            </option>
+
+                            <option value="1" {% if request.GET.rating == "1" %}selected{% endif %}>
+                                1+ ⭐
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- Show Timing -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Show Timing</label>
+
+                        <select name="show_timing" class="filter-select">
+
+                            <option value="">All Timings</option>
+
+                            <option value="morning" {% if request.GET.show_timing == "morning" %}selected{% endif %}>
+                                Morning
+                            </option>
+
+                            <option value="afternoon" {% if request.GET.show_timing == "afternoon" %}selected{% endif %}>
+                                Afternoon
+                            </option>
+
+                            <option value="evening" {% if request.GET.show_timing == "evening" %}selected{% endif %}>
+                                Evening
+                            </option>
+
+                            <option value="night" {% if request.GET.show_timing == "night" %}selected{% endif %}>
+                                Night
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- City -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">City</label>
+
+                        <select name="city" class="filter-select">
+
+                            <option value="">All Cities</option>
+
+                            {% for city in cities %}
+                                <option
+                                    value="{{ city }}"
+                                    {% if request.GET.city == city %}selected{% endif %}
+                                >
+                                    {{ city }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- Theater -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Theater / City</label>
+
+                        <select name="theater" class="filter-select">
+
+                            <option value="">All Theaters</option>
+
+                            {% for theater in theaters %}
+                                <option
+                                    value="{{ theater.id }}"
+                                    {% if request.GET.theater == theater.id|stringformat:"s" %}selected{% endif %}
+                                >
+                                    {{ theater.name }} - {{ theater.location }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- Release From -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Release From</label>
+
+                        <input
+                            type="date"
+                            name="release_from"
+                            class="filter-select"
+                            value="{{ request.GET.release_from|default_if_none:'' }}"
+                        >
+
+                    </div>
+
+                    <!-- Release To -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Release To</label>
+
+                        <input
+                            type="date"
+                            name="release_to"
+                            class="filter-select"
+                            value="{{ request.GET.release_to|default_if_none:'' }}"
+                        >
+
+                    </div>
+
+                    <!-- Sort By -->
+
+                    <div class="filter-group">
+
+                        <label class="filter-label">Sort By</label>
+
+                        <select name="sort" class="filter-select">
+
+                            <option value="" {% if not request.GET.sort %}selected{% endif %}>
+                                Relevance
+                            </option>
+
+                            <option value="popular" {% if request.GET.sort == "popular" %}selected{% endif %}>
+                                Popularity
+                            </option>
+
+                            <option value="newest" {% if request.GET.sort == "newest" %}selected{% endif %}>
+                                Newest Releases
+                            </option>
+
+                            <option value="rating" {% if request.GET.sort == "rating" %}selected{% endif %}>
+                                Highest Rating
+                            </option>
+
+                            <option value="price" {% if request.GET.sort == "price" %}selected{% endif %}>
+                                Lowest Ticket Price
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- Apply Filters -->
+
+                    <button type="submit" class="filter-button">
+                        Apply Filters
+                    </button>
+
+                    <!-- Clear -->
+
+                    <a href="{% url 'movie_list' %}" class="clear-filter">
+                        Clear
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
 
         <!-- =====================================================
              MOVIE LIST
         ====================================================== -->
 
+        <!-- Matching Movie Count -->
+
+        <div class="movie-count">
+            Showing {{ matching_movie_count }}
+            {% if matching_movie_count == 1 %}
+                movie
+            {% else %}
+                movies
+            {% endif %}
+        </div>
+
         {% if movies %}
 
             <div class="movie-grid" id="movieList">
 
-
                 {% for movie in movies %}
 
                     <div class="movie-item">
-
 
                         <!-- Poster -->
 
@@ -619,57 +921,40 @@
 
                                 {% endif %}
 
-
                                 <!-- Rating -->
 
                                 <div class="poster-rating">
-
                                     <i class="fas fa-star"></i>
-
                                     {{ movie.rating }}
-
                                 </div>
 
                             </div>
 
                         </a>
 
-
                         <!-- Movie Name -->
 
                         <h2 class="movie-name">
-
                             {{ movie.name }}
-
                         </h2>
-
 
                         <!-- Rating + Genres -->
 
                         <div class="movie-meta">
 
                             <span class="movie-rating">
-
                                 <i class="fas fa-star"></i>
-
                                 {{ movie.rating }}/5
-
                             </span>
-
 
                             {% if movie.genres.all %}
 
-                                <span class="meta-dot">
-                                    •
-                                </span>
-
+                                <span class="meta-dot">•</span>
 
                                 <span class="movie-genres">
 
                                     {% for genre in movie.genres.all %}
-
                                         {{ genre.name }}{% if not forloop.last %}, {% endif %}
-
                                     {% endfor %}
 
                                 </span>
@@ -677,7 +962,6 @@
                             {% endif %}
 
                         </div>
-
 
                         <!-- Details -->
 
@@ -689,27 +973,47 @@
                             <i class="fas fa-chevron-right"></i>
                         </a>
 
-
                     </div>
 
                 {% endfor %}
 
-
             </div>
 
+            <!-- =================================================
+                 PAGINATION
+            ================================================== -->
+
+            {% if movies.has_other_pages %}
+
+                <div class="pagination">
+
+                    {% if movies.has_previous %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&amp;{% endif %}{% endfor %}page={{ movies.previous_page_number }}">
+                            &laquo; Previous
+                        </a>
+                    {% endif %}
+
+                    <span class="page-info">
+                        Page {{ movies.number }} of {{ movies.paginator.num_pages }}
+                    </span>
+
+                    {% if movies.has_next %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&amp;{% endif %}{% endfor %}page={{ movies.next_page_number }}">
+                            Next &raquo;
+                        </a>
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
 
         {% else %}
 
-
-            <!-- =================================================
-                 EMPTY STATE
-            ================================================== -->
+            <!-- EMPTY STATE -->
 
             <div class="empty-state">
 
-                <div class="empty-icon">
-                    🎬
-                </div>
+                <div class="empty-icon">🎬</div>
 
                 <div class="empty-title">
                     No movies found
@@ -721,14 +1025,79 @@
 
             </div>
 
-
         {% endif %}
 
+        <!-- =====================================================
+             RECOMMENDATIONS
+        ====================================================== -->
+
+        {% if recommended_movies %}
+
+            <section class="recommendations-section">
+
+                <h2 class="recommendations-title">
+                    Recommended for You
+                </h2>
+
+                <p class="recommendations-subtitle">
+                    {% if user.is_authenticated %}
+                        Movies you might enjoy based on your interests.
+                    {% else %}
+                        Popular movies you might enjoy.
+                    {% endif %}
+                </p>
+
+                <div class="movie-grid">
+
+                    {% for movie in recommended_movies %}
+
+                        <div class="movie-item">
+
+                            <a href="{% url 'movie_detail' movie.id %}">
+
+                                <div class="movie-poster-wrapper">
+
+                                    {% if movie.image %}
+
+                                        <img
+                                            src="{{ movie.image.url }}"
+                                            alt="{{ movie.name }}"
+                                            class="movie-poster"
+                                        >
+
+                                    {% else %}
+
+                                        <div class="movie-poster">
+                                            No poster available
+                                        </div>
+
+                                    {% endif %}
+
+                                    <span class="poster-rating">
+                                        ★ {{ movie.rating|default:"N/A" }}
+                                    </span>
+
+                                </div>
+
+                                <h3 class="movie-name">
+                                    {{ movie.name }}
+                                </h3>
+
+                            </a>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+        {% endif %}
 
     </div>
 
 </div>
-
 
 <!-- =========================================================
      FONT AWESOME
