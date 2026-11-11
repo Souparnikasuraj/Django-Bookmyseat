@@ -160,6 +160,7 @@ def movie_list(request):
     matching_movie_count = movies.count()
 
     # Pagination: display 10 movies per page
+    movies = movies.order_by('id')
     paginator = Paginator(movies, 10)
 
     page_number = request.GET.get('page')
