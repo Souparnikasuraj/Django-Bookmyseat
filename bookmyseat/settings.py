@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
+import ssl
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -166,6 +167,7 @@ RAZORPAY_WEBHOOK_SECRET = os.environ.get(
 
 
 # Celery Configuration
+
 CELERY_BROKER_URL = os.environ.get(
     "CELERY_BROKER_URL",
     "redis://127.0.0.1:6379/0"
@@ -173,14 +175,23 @@ CELERY_BROKER_URL = os.environ.get(
 
 CELERY_RESULT_BACKEND = os.environ.get(
     "CELERY_RESULT_BACKEND",
-    "redis://127.0.0.1:6379/0"
+    CELERY_BROKER_URL
 )
+
+# Enable secure TLS connections for Upstash Redis
+if CELERY_BROKER_URL.startswith("rediss://"):
+    CELERY_BROKER_USE_SSL = {
+        "ssl_cert_reqs": ssl.CERT_REQUIRED
+    }
+
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        "ssl_cert_reqs": ssl.CERT_REQUIRED
+    }
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Kolkata"
-
 
 # Temporary production error logging
 LOGGING = {
