@@ -238,6 +238,12 @@ class Payment(models.Model):
         related_name='payments'
     )
 
+    covered_bookings = models.ManyToManyField(
+        Booking,
+        blank=True,
+        related_name='covered_by_payments'
+    )
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

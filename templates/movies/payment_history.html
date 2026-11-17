@@ -1,3 +1,4 @@
+
 {% extends "users/basic.html" %}
 
 {% block content %}
@@ -113,6 +114,44 @@
         font-size: 18px;
     }
 
+    .seat-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .seat-tag {
+        display: inline-block;
+        background: #e8eefc;
+        color: #172554;
+        padding: 6px 12px;
+        border-radius: 7px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .ticket-downloads {
+        margin-top: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .ticket-link {
+        display: inline-block;
+        padding: 10px 18px;
+        background: #172554;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .ticket-link:hover {
+        background: #263d78;
+        color: white;
+    }
+
     .empty-state {
         text-align: center;
         background: #fff;
@@ -148,76 +187,105 @@
 
 <div class="payment-history-page">
 
-<div class="history-header">
-    <h2>Payment History</h2>
-    <p>View your previous movie booking payments and their status.</p>
-</div>
+    <div class="history-header">
+        <h2>Payment History</h2>
+        <p>View your previous movie booking payments and their status.</p>
+    </div>
 
-{% if payments %}
+    {% if payments %}
 
-    {% for payment in payments %}
+        {% for payment in payments %}
 
-        <div class="payment-card">
+            <div class="payment-card">
 
-            <div class="payment-top">
+                <div class="payment-top">
 
-                <div>
-                    <h3 class="movie-name">
-                        {{ payment.booking.show_schedule.movie.name }}
-                    </h3>
+                    <div>
+                        <h3 class="movie-name">
+                            {{ payment.booking.show_schedule.movie.name }}
+                        </h3>
 
-                    <p class="payment-date">
-                        {{ payment.created_at|date:"d M Y, h:i A" }}
-                    </p>
-                </div>
-
-                <span class="status status-{{ payment.payment_status }}">
-                    {{ payment.payment_status }}
-                </span>
-
-            </div>
-
-            <div class="payment-details">
-
-                <div class="detail-item">
-                    <span class="detail-label">Seat</span>
-                    <span class="detail-value">
-                        {{ payment.booking.seat.seat_number }}
-                    </span>
-                </div>
-
-                <div class="detail-item">
-                    <span class="detail-label">Amount</span>
-                    <span class="detail-value amount">
-                        ₹{{ payment.amount }}
-                    </span>
-                </div>
-
-                <div class="detail-item">
-                    <span class="detail-label">Order ID</span>
-                    <span class="detail-value">
-                        {{ payment.razorpay_order_id }}
-                    </span>
-                </div>
-
-                
-                </div>
-
-                {% if payment.payment_status == 'success' and payment.booking.status == 'booked' %}
-                    <div style="margin-top: 18px;">
-                        <a
-                            href="{% url 'download_ticket' payment.booking.id %}"
-                            style="display: inline-block; padding: 10px 18px; background: #172554; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;"
-                        >
-                            Download Ticket (PDF)
-                        </a>
+                        <p class="payment-date">
+                            {{ payment.created_at|date:"d M Y, h:i A" }}
+                        </p>
                     </div>
+
+                    <span class="status status-{{ payment.payment_status }}">
+                        {{ payment.payment_status }}
+                    </span>
+
+                </div>
+
+                <div class="payment-details">
+
+                    <div class="detail-item">
+                        <span class="detail-label">Seats</span>
+
+                        <div class="seat-list">
+
+                            {% for booking in payment.display_bookings %}
+
+                                <span class="seat-tag">
+                                    {{ booking.seat.seat_number }}
+                                </span>
+
+                            {% empty %}
+
+                                <span>No seat information available</span>
+
+                            {% endfor %}
+
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Amount</span>
+
+                        <span class="detail-value amount">
+                            ₹{{ payment.amount }}
+                        </span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Order ID</span>
+
+                        <span class="detail-value">
+                            {{ payment.razorpay_order_id }}
+                        </span>
+                    </div>
+
+                </div>
+
+                {% if payment.payment_status == 'success' %}
+
+                    {% with first_booking=payment.display_bookings.0 %}
+
+                        {% if first_booking and first_booking.status == 'booked' %}
+
+                            <div class="ticket-downloads">
+
+                                <a
+                                    href="{% url 'download_payment_ticket' payment.id %}"
+                                    class="ticket-link"
+                                >
+                                    {% if payment.display_bookings|length == 1 %}
+                                        Download
+                                    {% else %}
+                                        Download Combined Ticket
+                                    {% endif %}
+                                </a>
+
+                            </div>
+
+                        {% endif %}
+
+                    {% endwith %}
+
                 {% endif %}
 
             </div>
 
         {% endfor %}
-
 
     {% else %}
 
@@ -227,7 +295,6 @@
         </div>
 
     {% endif %}
-
 
 </div>
 

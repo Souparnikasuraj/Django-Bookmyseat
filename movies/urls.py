@@ -78,4 +78,9 @@ urlpatterns=[
         views.verify_ticket,
         name='verify_ticket'
     ),
+    path(
+        'payment/<int:payment_id>/ticket/',
+        views.download_payment_ticket,
+        name='download_payment_ticket'
+    ),
 ]

@@ -646,6 +646,7 @@ def reservation_summary(request, show_id):
         }
     )
 
+
 @login_required(login_url='/login/')
 def payment(request, show_id):
 
@@ -657,6 +658,7 @@ def payment(request, show_id):
         ),
         id=show_id
     )
+
     expired_response = reject_expired_show(
         request,
         show_schedule
@@ -664,10 +666,10 @@ def payment(request, show_id):
 
     if expired_response:
         return expired_response
+
     if request.method == 'POST':
 
         try:
-
             with transaction.atomic():
 
                 reservations = list(
@@ -676,7 +678,7 @@ def payment(request, show_id):
                         show_schedule=show_schedule,
                         status='reserved',
                         reserved_until__gt=timezone.now()
-                    ).select_related('seat')
+                    ).select_related('seat').order_by('id')
                 )
 
                 if not reservations:
@@ -712,13 +714,16 @@ def payment(request, show_id):
 
                 print("RAZORPAY ORDER:", razorpay_order)
 
-                Payment.objects.create(
+                payment_record = Payment.objects.create(
                     booking=reservations[0],
                     user=request.user,
                     amount=total_amount,
                     payment_status='pending',
                     razorpay_order_id=razorpay_order['id']
                 )
+
+                # Link ALL selected bookings to this payment.
+                payment_record.covered_bookings.set(reservations)
 
         except ValueError:
 
@@ -752,7 +757,7 @@ def payment(request, show_id):
         show_schedule=show_schedule,
         status='reserved',
         reserved_until__gt=timezone.now()
-    ).select_related('seat')
+    ).select_related('seat').order_by('id')
 
     if not reservations.exists():
 
@@ -784,6 +789,7 @@ def payment(request, show_id):
         }
     )
 
+
 @login_required(login_url='/login/')
 def retry_payment(request, payment_id):
 
@@ -796,20 +802,76 @@ def retry_payment(request, payment_id):
 
     booking = old_payment.booking
 
+    show_schedule = booking.show_schedule
+
     expired_response = reject_expired_show(
         request,
-        booking.show_schedule
+        show_schedule
     )
 
     if expired_response:
         return expired_response
 
-    # Make sure the booking is still reserved
-    if (
-        booking.status != 'reserved'
-        or not booking.reserved_until
-        or booking.reserved_until <= timezone.now()
-    ):
+    try:
+        with transaction.atomic():
+
+            # Lock the original booking and all active reservations.
+            reservations = list(
+                Booking.objects.select_for_update().filter(
+                    user=request.user,
+                    show_schedule=show_schedule,
+                    status='reserved',
+                    reserved_until__gt=timezone.now()
+                ).select_related('seat').order_by('id')
+            )
+
+            # The original booking must still be part of
+            # the active reservation.
+            if not reservations or booking.id not in {
+                reservation.id for reservation in reservations
+            }:
+                raise ValueError(
+                    'Your seat reservation has expired.'
+                )
+
+            total_amount = (
+                show_schedule.ticket_price *
+                len(reservations)
+            )
+
+            amount_in_paise = int(
+                total_amount * Decimal('100')
+            )
+
+            order_data = {
+                'amount': amount_in_paise,
+                'currency': 'INR',
+                'receipt': (
+                    f'retry_{booking.id}_{request.user.id}'
+                ),
+                'notes': {
+                    'show_id': str(show_schedule.id),
+                    'user_id': str(request.user.id),
+                }
+            }
+
+            razorpay_order = razorpay_client.order.create(
+                data=order_data
+            )
+
+            payment_record = Payment.objects.create(
+                booking=booking,
+                user=request.user,
+                amount=total_amount,
+                payment_status='pending',
+                razorpay_order_id=razorpay_order['id']
+            )
+
+            # Link ALL reservations to the retry payment too.
+            payment_record.covered_bookings.set(reservations)
+
+    except ValueError:
+
         messages.error(
             request,
             'Your seat reservation has expired. Please select your seats again.'
@@ -817,56 +879,16 @@ def retry_payment(request, payment_id):
 
         return redirect(
             'book_seats',
-            show_id=booking.show_schedule.id
+            show_id=show_schedule.id
         )
-
-    reservations = Booking.objects.filter(
-        user=request.user,
-        show_schedule=booking.show_schedule,
-        status='reserved',
-        reserved_until__gt=timezone.now()
-    ).select_related('seat')
-
-    total_amount = (
-        booking.show_schedule.ticket_price *
-        reservations.count()
-    )
-
-    amount_in_paise = int(
-        total_amount * Decimal('100')
-    )
-
-    order_data = {
-        'amount': amount_in_paise,
-        'currency': 'INR',
-        'receipt': (
-            f'retry_{booking.id}_{request.user.id}'
-        ),
-        'notes': {
-            'show_id': str(booking.show_schedule.id),
-            'user_id': str(request.user.id),
-        }
-    }
-
-    razorpay_order = razorpay_client.order.create(
-        data=order_data
-    )
-
-    Payment.objects.create(
-        booking=booking,
-        user=request.user,
-        amount=total_amount,
-        payment_status='pending',
-        razorpay_order_id=razorpay_order['id']
-    )
 
     return render(
         request,
         'movies/payment.html',
         {
-            'show_schedule': booking.show_schedule,
-            'movie': booking.show_schedule.movie,
-            'theater': booking.show_schedule.theater,
+            'show_schedule': show_schedule,
+            'movie': show_schedule.movie,
+            'theater': show_schedule.theater,
             'reservations': reservations,
             'total_amount': total_amount,
             'razorpay_order_id': razorpay_order['id'],
@@ -874,6 +896,7 @@ def retry_payment(request, payment_id):
             'amount_in_paise': amount_in_paise,
         }
     )
+
 
 def get_youtube_embed_url(url):
     if not url:
@@ -1198,23 +1221,33 @@ def verify_payment(request, show_id):
     try:
         data = json.loads(request.body)
 
-        razorpay_payment_id = data.get(
-            'razorpay_payment_id'
-        )
+        razorpay_payment_id = data.get('razorpay_payment_id')
+        razorpay_order_id = data.get('razorpay_order_id')
+        razorpay_signature = data.get('razorpay_signature')
 
-        razorpay_order_id = data.get(
-            'razorpay_order_id'
-        )
-
-        razorpay_signature = data.get(
-            'razorpay_signature'
-        )
+        if not all([
+            razorpay_payment_id,
+            razorpay_order_id,
+            razorpay_signature
+        ]):
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing payment verification details.'
+            }, status=400)
 
         payment = get_object_or_404(
             Payment,
             razorpay_order_id=razorpay_order_id,
             user=request.user
         )
+
+        # Make sure this payment belongs to the requested show.
+        if payment.booking.show_schedule_id != show_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid payment for this show.'
+            }, status=400)
+
         if payment.payment_status == 'success':
             return JsonResponse({
                 'success': True,
@@ -1222,68 +1255,135 @@ def verify_payment(request, show_id):
                 'redirect_url': '/'
             })
 
+        # Verify Razorpay signature.
         razorpay_client.utility.verify_payment_signature({
             'razorpay_payment_id': razorpay_payment_id,
             'razorpay_order_id': razorpay_order_id,
             'razorpay_signature': razorpay_signature,
         })
+
+        # Prevent the same Razorpay payment ID from being reused.
         existing_payment = Payment.objects.filter(
             razorpay_payment_id=razorpay_payment_id,
             payment_status='success'
         ).exclude(
             id=payment.id
-        ).first()
+        ).exists()
 
         if existing_payment:
             return JsonResponse({
-                'success': True,
-                'message': 'Payment already processed.',
-                'redirect_url': '/'
-            })
+                'success': False,
+                'message': 'This payment has already been processed.'
+            }, status=400)
+
+        # Fetch payment details directly from Razorpay.
         razorpay_payment = razorpay_client.payment.fetch(
             razorpay_payment_id
         )
 
-        if razorpay_payment['status'] != 'captured':
-            payment.payment_status = 'failed'
-            payment.razorpay_payment_id = razorpay_payment_id
-            payment.razorpay_signature = razorpay_signature
-            payment.save()
-
+        if (
+            razorpay_payment.get('status') != 'captured'
+            or razorpay_payment.get('order_id') != razorpay_order_id
+            or razorpay_payment.get('currency') != 'INR'
+            or int(razorpay_payment.get('amount', 0))
+                != int(payment.amount * Decimal('100'))
+        ):
             return JsonResponse({
                 'success': False,
-                'message': 'Payment was not captured.'
+                'message': 'Payment details could not be verified.'
             }, status=400)
 
-        payment.razorpay_payment_id = razorpay_payment_id
-        payment.razorpay_signature = razorpay_signature
-        payment.payment_status = 'success'
-        payment.save()
+        with transaction.atomic():
 
-        reservations = list(
-            Booking.objects.filter(
-                user=request.user,
-                show_schedule_id=show_id,
-                status='reserved',
-                reserved_until__gt=timezone.now()
-            ).values_list('id', flat=True)
-        )
-
-        Booking.objects.filter(
-            id__in=reservations
-        ).update(
-            status='booked',
-            reserved_until=None
-        )
-
-        for booking_id in reservations:
-            transaction.on_commit(
-                lambda booking_id=booking_id: send_booking_ticket_email.delay(
-                    booking_id
-                ),
-                robust=True
+            # Lock the payment to avoid simultaneous processing.
+            payment = Payment.objects.select_for_update().get(
+                id=payment.id
             )
 
+            if payment.payment_status == 'success':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Payment already verified.',
+                    'redirect_url': '/'
+                })
+
+            # Get only the bookings linked to this payment.
+            covered_booking_ids = list(
+                payment.covered_bookings.values_list(
+                    'id',
+                    flat=True
+                )
+            )
+
+            # Backward compatibility for old payments
+            # that do not have covered_bookings populated.
+            if not covered_booking_ids:
+                covered_booking_ids = [payment.booking_id]
+
+            reservations = list(
+                Booking.objects.select_for_update().filter(
+                    id__in=covered_booking_ids,
+                    user=request.user,
+                    show_schedule_id=show_id
+                ).order_by('id')
+            )
+
+            # Ensure every linked booking belongs to this payment.
+            if len(reservations) != len(set(covered_booking_ids)):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'The associated bookings could not be verified. Please contact support.'
+                }, status=400)
+
+            # Check that every booking is still actively reserved.
+            current_time = timezone.now()
+
+            invalid_reservations = [
+                booking for booking in reservations
+                if (
+                    booking.status != 'reserved'
+                    or booking.reserved_until is None
+                    or booking.reserved_until <= current_time
+                )
+            ]
+
+            # Razorpay has captured the money, so record the
+            # successful payment even if the reservation expired.
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.razorpay_signature = razorpay_signature
+            payment.payment_status = 'success'
+            payment.save()
+
+            if invalid_reservations:
+                print(
+                    "MANUAL PAYMENT REVIEW REQUIRED:",
+                    payment.razorpay_order_id,
+                    "Some reservations are no longer active."
+                )
+
+                return JsonResponse({
+                    'success': False,
+                    'message': (
+                        'Your payment was received, but your seat '
+                        'reservation needs verification. Please contact support.'
+                    )
+                }, status=409)
+
+            # Confirm only the bookings associated with this payment.
+            Booking.objects.filter(
+                id__in=covered_booking_ids
+            ).update(
+                status='booked',
+                reserved_until=None
+            )
+
+            # Send one ticket email for each confirmed seat.
+            for booking_id in covered_booking_ids:
+                transaction.on_commit(
+                    lambda booking_id=booking_id:
+                        send_booking_ticket_email.delay(booking_id),
+                    robust=True
+                )
 
         return JsonResponse({
             'success': True,
@@ -1300,6 +1400,7 @@ def verify_payment(request, show_id):
             'message': 'Payment verification failed.'
         }, status=400)
         
+
 @csrf_exempt
 def razorpay_webhook(request):
 
@@ -1315,6 +1416,12 @@ def razorpay_webhook(request):
         )
 
         webhook_secret = settings.RAZORPAY_WEBHOOK_SECRET
+
+        if not webhook_signature or not webhook_secret:
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing webhook verification details.'
+            }, status=400)
 
         razorpay_client.utility.verify_webhook_signature(
             request.body.decode('utf-8'),
@@ -1332,84 +1439,177 @@ def razorpay_webhook(request):
 
             payment_entity = data['payload']['payment']['entity']
 
-            razorpay_payment_id = payment_entity['id']
-            razorpay_order_id = payment_entity['order_id']
+            razorpay_payment_id = payment_entity.get('id')
+            razorpay_order_id = payment_entity.get('order_id')
 
-            payment = Payment.objects.filter(
-                razorpay_order_id=razorpay_order_id
-            ).first()
+            if not razorpay_payment_id or not razorpay_order_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Missing payment details.'
+                }, status=400)
 
-            if payment:
+            with transaction.atomic():
 
-                # Prevent duplicate processing
+                payment = Payment.objects.select_for_update().filter(
+                    razorpay_order_id=razorpay_order_id
+                ).first()
+
+                if not payment:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Payment record not found.'
+                    }, status=404)
+
+                # Prevent duplicate processing.
                 if payment.payment_status == 'success':
                     return JsonResponse({
                         'success': True,
                         'message': 'Payment already processed.'
                     })
 
-                
-                with transaction.atomic():
+                # Verify captured amount and currency.
+                if (
+                    payment_entity.get('currency') != 'INR'
+                    or int(payment_entity.get('amount', 0))
+                    != int(payment.amount * Decimal('100'))
+                ):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Payment amount or currency mismatch.'
+                    }, status=400)
 
-                    payment.payment_status = 'success'
-                    payment.razorpay_payment_id = razorpay_payment_id
-                    payment.save()
+                # Get only bookings associated with this payment.
+                booking_ids = list(
+                    payment.covered_bookings.values_list(
+                        'id',
+                        flat=True
+                    )
+                )
 
-                    booking_ids = list(
-                        Booking.objects.filter(
-                            user=payment.user,
-                            show_schedule=payment.booking.show_schedule,
-                            status='reserved'
-                        ).values_list('id', flat=True)
+                # Backward compatibility for older payments.
+                if not booking_ids:
+                    booking_ids = [payment.booking_id]
+
+                bookings = list(
+                    Booking.objects.select_for_update().filter(
+                        id__in=booking_ids,
+                        user=payment.user,
+                        show_schedule_id=payment.booking.show_schedule_id
+                    ).order_by('id')
+                )
+
+                if len(bookings) != len(set(booking_ids)):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Associated bookings could not be verified.'
+                    }, status=400)
+
+                # Record the captured payment.
+                payment.payment_status = 'success'
+                payment.razorpay_payment_id = razorpay_payment_id
+                payment.save()
+
+                # Confirm only active reservations linked to this payment.
+                current_time = timezone.now()
+
+                valid_bookings = [
+                    booking for booking in bookings
+                    if (
+                        booking.status == 'reserved'
+                        and booking.reserved_until is not None
+                        and booking.reserved_until > current_time
+                    )
+                ]
+
+                invalid_bookings = [
+                    booking for booking in bookings
+                    if booking.status != 'booked'
+                    and booking not in valid_bookings
+                ]
+
+                if invalid_bookings:
+                    print(
+                        "MANUAL PAYMENT REVIEW REQUIRED:",
+                        razorpay_order_id,
+                        "Some associated reservations are no longer active."
                     )
 
+                if valid_bookings:
+                    valid_booking_ids = [
+                        booking.id for booking in valid_bookings
+                    ]
+
                     Booking.objects.filter(
-                        id__in=booking_ids
+                        id__in=valid_booking_ids
                     ).update(
                         status='booked',
                         reserved_until=None
                     )
 
-                    for booking_id in booking_ids:
+                    for booking_id in valid_booking_ids:
                         transaction.on_commit(
-                            lambda booking_id=booking_id: send_booking_ticket_email.delay(
-                                booking_id
-                            ),
+                            lambda booking_id=booking_id:
+                                send_booking_ticket_email.delay(booking_id),
                             robust=True
                         )
 
-
-                print("Payment marked as successful.")
-                print("Bookings confirmed.")
+            print("Payment marked as successful.")
+            print("Associated bookings processed.")
 
         # ---------------- PAYMENT FAILED ----------------
         elif event == 'payment.failed':
 
             payment_entity = data['payload']['payment']['entity']
 
-            razorpay_payment_id = payment_entity['id']
+            razorpay_payment_id = payment_entity.get('id')
             razorpay_order_id = payment_entity.get('order_id')
 
-            payment = Payment.objects.filter(
-                razorpay_order_id=razorpay_order_id
-            ).first()
+            if not razorpay_order_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Missing Razorpay order ID.'
+                }, status=400)
 
-            if payment:
+            with transaction.atomic():
 
-                with transaction.atomic():
+                payment = Payment.objects.select_for_update().filter(
+                    razorpay_order_id=razorpay_order_id
+                ).first()
+
+                if payment:
+
+                    # Never downgrade a successful payment.
+                    if payment.payment_status == 'success':
+                        return JsonResponse({
+                            'success': True,
+                            'message': 'Payment already successful.'
+                        })
+
+                    booking_ids = list(
+                        payment.covered_bookings.values_list(
+                            'id',
+                            flat=True
+                        )
+                    )
+
+                    # Backward compatibility for older payments.
+                    if not booking_ids:
+                        booking_ids = [payment.booking_id]
 
                     payment.payment_status = 'failed'
                     payment.razorpay_payment_id = razorpay_payment_id
                     payment.save()
 
+                    # Release only this payment's reserved bookings.
                     Booking.objects.filter(
+                        id__in=booking_ids,
                         user=payment.user,
-                        show_schedule=payment.booking.show_schedule,
+                        show_schedule_id=payment.booking.show_schedule_id,
                         status='reserved'
                     ).delete()
 
-                print("Payment marked as failed.")
-                print("Reserved seats released.")
+            print("Payment marked as failed.")
+            print("Only associated reserved seats were released.")
 
         # ---------------- ORDER PAID ----------------
         elif event == 'order.paid':
@@ -1423,12 +1623,13 @@ def razorpay_webhook(request):
 
     except Exception as e:
 
-        print("Webhook verification error:", e)
+        print("Webhook processing error:", e)
 
         return JsonResponse({
             'success': False,
-            'message': 'Invalid webhook signature.'
+            'message': 'Webhook processing failed.'
         }, status=400)
+
 
 @login_required(login_url='/login/')
 @csrf_exempt
@@ -1481,7 +1682,22 @@ def payment_history(request):
         'booking__show_schedule',
         'booking__show_schedule__movie',
         'booking__seat'
+    ).prefetch_related(
+        'covered_bookings__seat',
+        'covered_bookings__show_schedule__movie'
     ).order_by('-created_at')
+
+    for payment in payments:
+
+        covered_bookings = list(
+            payment.covered_bookings.all()
+        )
+
+        # Backward compatibility for older payments.
+        if not covered_bookings:
+            covered_bookings = [payment.booking]
+
+        payment.display_bookings = covered_bookings
 
     return render(
         request,
@@ -1840,6 +2056,34 @@ def export_bookings_csv(request):
 
 
 @login_required(login_url='/login/')
+def download_payment_ticket(request, payment_id):
+    """Download one combined PDF for a successful payment."""
+
+    payment = get_object_or_404(
+        Payment.objects.select_related('booking', 'user'),
+        pk=payment_id,
+        user=request.user,
+        payment_status='success',
+    )
+
+    try:
+        pdf_bytes = generate_ticket_pdf(
+            payment.booking,
+            payment=payment,
+        )
+    except ValueError as e:
+        raise Http404(str(e))
+
+    response = HttpResponse(
+        pdf_bytes,
+        content_type='application/pdf',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="BookMySeat_Payment_{payment.pk}.pdf"'
+    )
+    return response
+
+@login_required(login_url='/login/')
 def download_ticket(request, booking_id):
     """Download a PDF ticket for the current user's paid booking."""
 
@@ -1856,23 +2100,43 @@ def download_ticket(request, booking_id):
         status='booked',
     )
 
-    if not booking.payments.filter(payment_status='success').exists():
-        raise Http404("No successful payment found for this booking.")
+    # Find the successful payment that actually covers this booking.
+    payment = Payment.objects.filter(
+        user=request.user,
+        payment_status='success',
+    ).filter(
+        Q(covered_bookings=booking) |
+        Q(booking=booking)
+    ).distinct().order_by('-created_at').first()
 
-    pdf_bytes = generate_ticket_pdf(booking)
+    if payment is None:
+        raise Http404(
+            "No successful payment found for this booking."
+        )
+
+    try:
+        pdf_bytes = generate_ticket_pdf(
+            booking,
+            payment=payment
+        )
+    except ValueError as e:
+        raise Http404(str(e))
 
     response = HttpResponse(
         pdf_bytes,
         content_type='application/pdf',
     )
+
     response['Content-Disposition'] = (
         f'attachment; filename="BookMySeat_Ticket_{booking.pk}.pdf"'
     )
+
     return response
 
 
+
 def verify_ticket(request, token):
-    """Verify a ticket using its signed QR-code token."""
+    """Verify all bookings associated with a signed payment ticket."""
 
     try:
         ticket_data = signing.loads(
@@ -1887,41 +2151,83 @@ def verify_ticket(request, token):
             content_type='text/plain',
         )
 
-    booking = get_object_or_404(
-        Booking.objects.select_related(
-            'user',
+    payment = get_object_or_404(
+        Payment.objects.select_related('booking', 'user'),
+        pk=ticket_data.get('payment_id'),
+        payment_status='success',
+    )
+
+    # Check the payment's bookings, with fallback for older payments.
+    bookings = list(
+        payment.covered_bookings.select_related(
             'seat',
             'show_schedule__movie',
             'show_schedule__theater',
             'show_schedule__screen',
-        ),
-        pk=ticket_data.get('booking_id'),
-        status='booked',
+        ).order_by('seat__seat_number')
     )
 
-    payment = Payment.objects.filter(
-        pk=ticket_data.get('payment_id'),
-        user=booking.user,
-        booking__show_schedule=booking.show_schedule,
-        payment_status='success',
-    ).first()
+    if not bookings:
+        bookings = [
+            get_object_or_404(
+                Booking.objects.select_related(
+                    'seat',
+                    'show_schedule__movie',
+                    'show_schedule__theater',
+                    'show_schedule__screen',
+                ),
+                pk=payment.booking_id,
+            )
+        ]
 
-    if payment is None:
+    # Support old QR codes that were issued for an individual booking.
+    old_booking_id = ticket_data.get('booking_id')
+    if old_booking_id and not any(
+        item.pk == old_booking_id for item in bookings
+    ):
         return HttpResponse(
-            "Ticket payment could not be verified.",
+            "Ticket booking does not belong to this payment.",
             status=400,
             content_type='text/plain',
         )
 
+    if any(
+        item.status != 'booked' or item.user_id != payment.user_id
+        for item in bookings
+    ):
+        return HttpResponse(
+            "One or more bookings could not be verified.",
+            status=400,
+            content_type='text/plain',
+        )
+
+    show = bookings[0].show_schedule
+
+    if any(item.show_schedule_id != show.pk for item in bookings):
+        return HttpResponse(
+            "The payment contains bookings for different shows.",
+            status=400,
+            content_type='text/plain',
+        )
+
+    seat_numbers = ", ".join(
+        item.seat.seat_number for item in bookings
+    )
+    booking_ids = ", ".join(str(item.pk) for item in bookings)
+
     return HttpResponse(
         (
             "VALID BOOKMYSEAT TICKET\n"
-            f"Booking ID: {booking.pk}\n"
-            f"Movie: {booking.show_schedule.movie.name}\n"
-            f"Theater: {booking.show_schedule.theater.name}\n"
-            f"Screen: {booking.show_schedule.screen.name}\n"
-            f"Seat: {booking.seat.seat_number}\n"
-            f"Show time: {timezone.localtime(booking.show_schedule.show_time)}\n"
+            f"Payment ID: {payment.pk}\n"
+            f"Booking IDs: {booking_ids}\n"
+            f"Movie: {show.movie.name}\n"
+            f"Theater: {show.theater.name}\n"
+            f"Screen: {show.screen.name}\n"
+            f"Seats: {seat_numbers}\n"
+            f"Number of seats: {len(bookings)}\n"
+            f"Show time: {timezone.localtime(show.show_time)}\n"
+            f"Payment reference: "
+            f"{payment.razorpay_payment_id or payment.razorpay_order_id}\n"
             "Payment status: SUCCESS"
         ),
         content_type='text/plain',
