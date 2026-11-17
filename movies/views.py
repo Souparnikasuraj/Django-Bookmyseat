@@ -35,7 +35,7 @@ from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYe
 from django.db.models.functions import ExtractHour
 import csv
 from django.core.paginator import Paginator
-from .tasks import send_booking_ticket_email
+from .tasks import send_payment_ticket_email
 
 razorpay_client = razorpay.Client(
     auth=(
@@ -1377,13 +1377,12 @@ def verify_payment(request, show_id):
                 reserved_until=None
             )
 
-            # Send one ticket email for each confirmed seat.
-            for booking_id in covered_booking_ids:
-                transaction.on_commit(
-                    lambda booking_id=booking_id:
-                        send_booking_ticket_email.delay(booking_id),
-                    robust=True
-                )
+            # Send one combined ticket email for this payment.
+            transaction.on_commit(
+                lambda payment_id=payment.id:
+                    send_payment_ticket_email.delay(payment_id),
+                robust=True
+            )
 
         return JsonResponse({
             'success': True,
@@ -1546,12 +1545,12 @@ def razorpay_webhook(request):
                         reserved_until=None
                     )
 
-                    for booking_id in valid_booking_ids:
-                        transaction.on_commit(
-                            lambda booking_id=booking_id:
-                                send_booking_ticket_email.delay(booking_id),
-                            robust=True
-                        )
+                    # Send one combined ticket email for this payment.
+                    transaction.on_commit(
+                        lambda payment_id=payment.id:
+                            send_payment_ticket_email.delay(payment_id),
+                        robust=True
+                    )
 
             print("Payment marked as successful.")
             print("Associated bookings processed.")
