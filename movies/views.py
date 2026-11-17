@@ -44,6 +44,23 @@ razorpay_client = razorpay.Client(
     )
 )
 
+def reject_expired_show(request, show_schedule):
+    """
+    Prevent users from booking a show that has already started.
+    """
+    if show_schedule.show_time <= timezone.now():
+        messages.error(
+            request,
+            'This show has already started or expired. '
+            'Please select an upcoming show.'
+        )
+
+        return redirect(
+            'theater_list',
+            movie_id=show_schedule.movie_id
+        )
+
+    return None
 
 def movie_list(request):
     search_query = request.GET.get('search', '')
@@ -55,7 +72,9 @@ def movie_list(request):
     theater = request.GET.get('theater', '')
     release_from = request.GET.get('release_from', '')
     release_to = request.GET.get('release_to', '')
-    movies = Movie.objects.all()
+    movies = Movie.objects.filter(
+        show_schedules__show_time__gt=timezone.now()
+    ).distinct()
     sort = request.GET.get('sort', '')
 
     # Search by movie name
@@ -160,7 +179,8 @@ def movie_list(request):
     matching_movie_count = movies.count()
 
     # Pagination: display 10 movies per page
-    movies = movies.order_by('id')
+    if not sort:
+        movies = movies.order_by('id')
     paginator = Paginator(movies, 10)
 
     page_number = request.GET.get('page')
@@ -264,19 +284,22 @@ def movie_list(request):
             'recommended_movies': recommended_movies,
         }
     )
-
 def theater_list(request, movie_id):
     movie = get_object_or_404(Movie, id=movie_id)
 
+    current_time = timezone.now()
+
     show_schedules = ShowSchedule.objects.filter(
-        movie=movie
+        movie=movie,
+        show_time__gt=current_time
     ).select_related(
         'theater',
         'screen'
     ).order_by('show_time')
 
     theaters = Theater.objects.filter(
-        show_schedules__movie=movie
+        show_schedules__movie=movie,
+        show_schedules__show_time__gt=current_time
     ).distinct()
 
     return render(
@@ -299,6 +322,14 @@ def book_seats(request, show_id):
         ),
         id=show_id
     )
+
+    expired_response = reject_expired_show(
+        request,
+        show_schedule
+    )
+
+    if expired_response:
+        return expired_response
 
     seats = Seat.objects.filter(
         screen=show_schedule.screen
@@ -588,6 +619,13 @@ def reservation_summary(request, show_id):
         ),
         id=show_id
     )
+    expired_response = reject_expired_show(
+        request,
+        show_schedule
+    )
+
+    if expired_response:
+        return expired_response
 
     # Get the current user's active reservations
     reservations = Booking.objects.filter(
@@ -619,7 +657,13 @@ def payment(request, show_id):
         ),
         id=show_id
     )
+    expired_response = reject_expired_show(
+        request,
+        show_schedule
+    )
 
+    if expired_response:
+        return expired_response
     if request.method == 'POST':
 
         try:
@@ -751,6 +795,14 @@ def retry_payment(request, payment_id):
     )
 
     booking = old_payment.booking
+
+    expired_response = reject_expired_show(
+        request,
+        booking.show_schedule
+    )
+
+    if expired_response:
+        return expired_response
 
     # Make sure the booking is still reserved
     if (
@@ -1086,13 +1138,20 @@ def report_review(request, review_id):
         }
     )
 
-
 def seat_availability(request, show_id):
 
     show_schedule = get_object_or_404(
         ShowSchedule,
         id=show_id
     )
+
+    # Prevent availability checks for expired shows
+    if show_schedule.show_time <= timezone.now():
+        return JsonResponse({
+            'error': 'This show has already started or expired.',
+            'booked_seats': [],
+            'reserved_seats': [],
+        }, status=400)
 
     # Remove expired temporary reservations
     Booking.objects.filter(
